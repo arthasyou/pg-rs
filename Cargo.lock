@@ -1279,6 +1279,7 @@ dependencies = [
 name = "pg-sdk"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "pg-core",
  "sea-orm",
  "serde",

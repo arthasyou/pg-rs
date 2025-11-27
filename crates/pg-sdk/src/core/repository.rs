@@ -1,20 +1,15 @@
+use async_trait::async_trait;
 use sea_orm::{prelude::*, *};
 
 use super::pagination::{PaginatedResponse, PaginationParams};
 use crate::error::Result;
 
 /// Generic repository trait for common CRUD operations
-
-// #[async_trait]
-#[async_trait::async_trait]
+#[async_trait]
 pub trait Repository<E, M>
 where
     E: EntityTrait<Model = M>,
-    M: ModelTrait<Entity = E>
-        + sea_orm::FromQueryResult
-        + IntoActiveModel<E::ActiveModel>
-        + Send
-        + Sync,
+    M: ModelTrait<Entity = E> + Send + Sync,
 {
     /// Get database connection
     fn db(&self) -> &DatabaseConnection;
@@ -23,29 +18,34 @@ where
     async fn find_by_id(
         &self,
         id: <E::PrimaryKey as PrimaryKeyTrait>::ValueType,
-    ) -> Result<Option<M>> {
-        let entity = E::find_by_id(id).one(self.db()).await?;
-        Ok(entity)
+    ) -> Result<Option<M>>
+    where
+        E::Model: FromQueryResult,
+    {
+        Ok(E::find_by_id(id).one(self.db()).await?)
     }
 
     /// Find all entities
-    async fn find_all(&self) -> Result<Vec<M>> {
-        let entities = E::find().all(self.db()).await?;
-        Ok(entities)
+    async fn find_all(&self) -> Result<Vec<M>>
+    where
+        E::Model: FromQueryResult,
+    {
+        Ok(E::find().all(self.db()).await?)
     }
 
     /// Find entities with pagination
-    async fn find_paginated(&self, params: &PaginationParams) -> Result<PaginatedResponse<M>> {
+    async fn find_paginated(&self, params: &PaginationParams) -> Result<PaginatedResponse<M>>
+    where
+        E::Model: FromQueryResult,
+    {
         let params = params.clone().validate();
 
-        // Get paginated items using limit and offset
         let items = E::find()
             .limit(params.page_size)
             .offset(params.offset())
             .all(self.db())
             .await?;
 
-        // Get total count separately for better performance
         let total = E::find()
             .select_only()
             .column_as(Expr::value(1).count(), "count")
@@ -60,40 +60,33 @@ where
     /// Insert a new entity
     async fn insert(&self, model: E::ActiveModel) -> Result<M>
     where
-        E::ActiveModel: ActiveModelBehavior + Send + Sync,
+        E::ActiveModel: ActiveModelBehavior + Send,
+        M: IntoActiveModel<E::ActiveModel>,
     {
-        let model = model.insert(self.db()).await?;
-        Ok(model)
+        Ok(model.insert(self.db()).await?)
     }
 
     /// Update an existing entity
-    async fn update(&self, model: <E>::ActiveModel) -> Result<M>
+    async fn update(&self, model: E::ActiveModel) -> Result<M>
     where
-        E::ActiveModel: ActiveModelBehavior + Send + Sync,
+        E::ActiveModel: ActiveModelBehavior + Send,
+        M: IntoActiveModel<E::ActiveModel>,
     {
-        let model = model.update(self.db()).await?;
-        Ok(model)
+        Ok(model.update(self.db()).await?)
     }
 
     /// Delete entity by primary key
     async fn delete_by_id(
         &self,
-        id: <<E as EntityTrait>::PrimaryKey as PrimaryKeyTrait>::ValueType,
-    ) -> Result<DeleteResult>
-    where
-        <<E as EntityTrait>::PrimaryKey as PrimaryKeyTrait>::ValueType: Send + Sync,
-    {
-        let result = E::delete_by_id(id).exec(self.db()).await?;
-        Ok(result)
+        id: <E::PrimaryKey as PrimaryKeyTrait>::ValueType,
+    ) -> Result<DeleteResult> {
+        Ok(E::delete_by_id(id).exec(self.db()).await?)
     }
 
     /// Check if entity exists by primary key
-    async fn exists_by_id(
-        &self,
-        id: <<E as EntityTrait>::PrimaryKey as PrimaryKeyTrait>::ValueType,
-    ) -> Result<bool>
+    async fn exists_by_id(&self, id: <E::PrimaryKey as PrimaryKeyTrait>::ValueType) -> Result<bool>
     where
-        <<E as EntityTrait>::PrimaryKey as PrimaryKeyTrait>::ValueType: Send + Sync,
+        E::Model: FromQueryResult,
     {
         Ok(self.find_by_id(id).await?.is_some())
     }

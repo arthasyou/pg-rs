@@ -20,6 +20,7 @@ serde = { version = "1.0", features = ["derive"] }
 dotenvy = "0.15"
 validator = { version = "0.18", features = ["derive"] }
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing"] }
+async-trait = "0.1"
 
 # Root package for examples
 [package]

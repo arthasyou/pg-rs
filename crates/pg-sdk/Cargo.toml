@@ -11,3 +11,4 @@ thiserror.workspace = true
 serde.workspace = true
 validator.workspace = true
 time.workspace = true
+async-trait.workspace = true
