@@ -4,8 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-pg-core.workspace = true
+pg-core = { path = "../pg-core" }
 sea-orm.workspace = true
 tokio.workspace = true
 thiserror.workspace = true
 serde.workspace = true
+validator.workspace = true
+time.workspace = true

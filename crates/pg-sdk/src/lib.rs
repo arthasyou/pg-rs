@@ -3,10 +3,18 @@ pub use pg_core;
 // Re-export sea_orm for convenience
 pub use sea_orm;
 
-// Business logic modules will go here
-// pub mod prompt;
-// pub mod user;
-// etc.
+// Error types
+pub mod error;
+pub use error::{Result, SdkError};
+
+// Entity definitions
+pub mod entity;
+
+// Core utilities (pagination, repository, validation)
+pub mod core;
+
+// Business logic modules
+pub mod prompt;
 
 #[cfg(test)]
 mod tests {

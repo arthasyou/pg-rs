@@ -15,8 +15,8 @@ pub struct Model {
     pub parent_id: Option<i64>,
     pub is_active: bool,
     pub tags: Option<String>,
-    pub create_time: DateTimeWithTimeZone,
-    pub update_time: DateTimeWithTimeZone,
+    pub create_time: TimeDateTimeWithTimeZone,
+    pub update_time: TimeDateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
