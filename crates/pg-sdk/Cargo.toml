@@ -1,0 +1,11 @@
+[package]
+name = "pg-sdk"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pg-core.workspace = true
+sea-orm.workspace = true
+tokio.workspace = true
+thiserror.workspace = true
+serde.workspace = true

@@ -1,0 +1,9 @@
+/target
+/logs
+.env
+
+#MacOS
+**/.DS_Store
+
+.claude
+.serana
