@@ -91,7 +91,7 @@ impl<T> PaginatedResponse<T> {
         let total_pages = if total == 0 {
             0
         } else {
-            (total + params.page_size - 1) / params.page_size
+            total.div_ceil(params.page_size)
         };
 
         Self {
