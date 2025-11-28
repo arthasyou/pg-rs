@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use sea_orm::{prelude::*, *};
 use time::OffsetDateTime;
+use validator::Validate;
 
 use super::{
     dto::{CreatePromptRequest, ListPromptsOptions, UpdatePromptRequest},
     repo::PromptRepo,
 };
 use crate::{
-    Repository, Result, SdkError,
+    PaginatedResponse, PaginationParams, Repository, Result, SdkError,
     entity::{prelude::Prompt, prompt},
-    validate_struct,
 };
 
 /// Prompt service for business logic
@@ -22,11 +22,11 @@ impl PromptService {
     /// Create a new service instance
     pub fn new(db: Arc<DatabaseConnection>) -> Self {
         Self {
-            repo: PromptRepo::new(db.clone()),
+            repo: PromptRepo::new(db),
         }
     }
 
-    // 事务使用
+    /// Get database connection for transactions
     pub fn db(&self) -> &DatabaseConnection {
         self.repo.db()
     }
@@ -34,7 +34,7 @@ impl PromptService {
     /// Create a new prompt
     pub async fn create(&self, req: CreatePromptRequest) -> Result<prompt::Model> {
         // Validate request
-        validate_struct(&req)?;
+        req.validate()?;
 
         let now = OffsetDateTime::now_utc();
 
@@ -62,7 +62,7 @@ impl PromptService {
     /// Update an existing prompt (creates a new version)
     pub async fn update(&self, id: i64, req: UpdatePromptRequest) -> Result<prompt::Model> {
         // Validate request
-        validate_struct(&req)?;
+        req.validate()?;
 
         // Get the original prompt using repository
         let original = self
@@ -81,7 +81,7 @@ impl PromptService {
                     .add(prompt::Column::Id.eq(parent_id))
                     .add(prompt::Column::ParentId.eq(parent_id)),
             )
-            .exec(self.repo.db())
+            .exec(self.db())
             .await?;
 
         // Create new version
@@ -133,27 +133,24 @@ impl PromptService {
     }
 
     /// List prompts with pagination
-    pub async fn list(&self, options: ListPromptsOptions) -> Result<(Vec<prompt::Model>, u64)> {
-        let page = options.page.unwrap_or(1);
-        let page_size = options.page_size.unwrap_or(20);
+    pub async fn list(
+        &self,
+        options: ListPromptsOptions,
+    ) -> Result<PaginatedResponse<prompt::Model>> {
+        let params =
+            PaginationParams::new(options.page.unwrap_or(1), options.page_size.unwrap_or(20));
 
-        let mut query = Prompt::find();
+        // Build query with filter and order
+        let mut query = self.repo.query();
 
         if options.only_active {
             query = query.filter(prompt::Column::IsActive.eq(true));
         }
 
-        // Order by update_time descending
         query = query.order_by_desc(prompt::Column::UpdateTime);
 
-        // Get total count
-        let total = query.clone().count(self.repo.db()).await?;
-
-        // Apply pagination
-        let paginator = query.paginate(self.repo.db(), page_size);
-        let prompts = paginator.fetch_page(page - 1).await?;
-
-        Ok((prompts, total))
+        // Use repository's find_paginated
+        self.repo.find_paginated(&params, query).await
     }
 
     /// Get all versions of a prompt
@@ -167,30 +164,31 @@ impl PromptService {
 
         let parent_id = prompt.parent_id.unwrap_or(prompt.id);
 
-        Ok(Prompt::find()
-            .filter(
+        // Use repository's query builder and select_all
+        let query = self
+            .repo
+            .query_filtered(
                 Condition::any()
                     .add(prompt::Column::Id.eq(parent_id))
                     .add(prompt::Column::ParentId.eq(parent_id)),
             )
-            .order_by_asc(prompt::Column::Version)
-            .all(self.repo.db())
-            .await?)
+            .order_by_asc(prompt::Column::Version);
+
+        self.repo.select_all(query).await
     }
 
     /// Get the active (latest) version of a prompt by parent_id
     pub async fn get_active(&self, parent_id: i64) -> Result<Option<prompt::Model>> {
-        Ok(Prompt::find()
-            .filter(
-                Condition::all()
-                    .add(
-                        Condition::any()
-                            .add(prompt::Column::Id.eq(parent_id))
-                            .add(prompt::Column::ParentId.eq(parent_id)),
-                    )
-                    .add(prompt::Column::IsActive.eq(true)),
-            )
-            .one(self.repo.db())
-            .await?)
+        let query = self.repo.query_filtered(
+            Condition::all()
+                .add(
+                    Condition::any()
+                        .add(prompt::Column::Id.eq(parent_id))
+                        .add(prompt::Column::ParentId.eq(parent_id)),
+                )
+                .add(prompt::Column::IsActive.eq(true)),
+        );
+
+        self.repo.select_one(query).await
     }
 }

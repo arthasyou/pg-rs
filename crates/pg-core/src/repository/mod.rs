@@ -1,9 +1,12 @@
-use std::sync::Arc;
+pub mod base;
+mod macros;
 
 use sea_orm::{prelude::*, *};
 
-use super::pagination::{PaginatedResponse, PaginationParams};
-use crate::{common::select_ext::SelectExt, error::Result};
+use crate::{
+    error::Result,
+    query::{PaginatedResponse, PaginationParams, SelectExt},
+};
 
 /// Generic repository trait for common CRUD operations
 #[async_trait::async_trait]
@@ -66,30 +69,15 @@ where
         Ok(self.select_all(query).await?)
     }
 
-    /// Find entities with optional filter + pagination
+    /// Find entities with pagination
     async fn find_paginated(
         &self,
         params: &PaginationParams,
-        filter: Option<Condition>,
+        query: Select<E>,
     ) -> Result<PaginatedResponse<M>> {
-        // 1) base query
-        let mut base = self.query();
-
-        // 2) apply filter only if provided
-        if let Some(cond) = filter {
-            base = base.filter(cond);
-        }
-
-        // 3) build paginated query
-        let list_query = base.clone().pagination(params);
-
-        // 4) get items
+        let list_query = query.clone().pagination(params);
         let items = self.select_all(list_query).await?;
-
-        // 5) count without pagination (only filter applied)
-        let total = base.total_count(self.db()).await;
-
-        // 6) return paginated response
+        let total = query.total_count(self.db()).await;
         Ok(PaginatedResponse::new(items, params, total))
     }
 
@@ -141,44 +129,4 @@ where
     ) -> Result<bool> {
         Ok(self.find_by_id(id).await?.is_some())
     }
-}
-
-/// Base repository implementation
-pub struct BaseRepository {
-    db: Arc<DatabaseConnection>,
-}
-
-impl BaseRepository {
-    /// Create a new base repository
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
-        Self { db }
-    }
-
-    pub fn db(&self) -> &DatabaseConnection {
-        &self.db
-    }
-}
-
-/// Macro to implement Repository trait for a concrete entity
-#[macro_export]
-macro_rules! impl_repository {
-    ($struct_name:ident, $entity:ty, $model:ty) => {
-        pub struct $struct_name {
-            base: $crate::common::repository::BaseRepository,
-        }
-
-        impl $struct_name {
-            pub fn new(db: std::sync::Arc<sea_orm::DatabaseConnection>) -> Self {
-                Self {
-                    base: $crate::common::repository::BaseRepository::new(db),
-                }
-            }
-        }
-
-        impl $crate::common::repository::Repository<$entity, $model> for $struct_name {
-            fn db(&self) -> &sea_orm::DatabaseConnection {
-                self.base.db()
-            }
-        }
-    };
 }

@@ -3,7 +3,6 @@ pub use pg_core;
 // Re-export core utilities from pg-core
 pub use pg_core::{
     BaseRepository, PaginatedResponse, PaginationParams, PgError as SdkError, Repository, Result,
-    Validate, ValidationError, ValidationErrors, format_validation_errors, validate_struct,
 };
 
 // Entity definitions

@@ -124,7 +124,6 @@ impl PgError {
 }
 
 /// Backward compatibility alias
-pub type DatabaseError = PgError;
 
 /// Result type alias using PgError
 pub type Result<T> = std::result::Result<T, PgError>;

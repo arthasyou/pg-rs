@@ -1,6 +1,6 @@
 use sea_orm::{DatabaseConnection, EntityTrait, QuerySelect, Select, prelude::Expr};
 
-use crate::PaginationParams;
+use super::PaginationParams;
 
 #[async_trait::async_trait]
 pub trait SelectExt<E>
