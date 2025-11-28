@@ -1,12 +1,12 @@
-// Re-export validator crate for convenience
+// Re-export validator types
 pub use validator::{Validate, ValidationError, ValidationErrors};
 
-/// Helper function to validate a struct and return a formatted error message
-pub fn validate_struct<T: Validate>(value: &T) -> Result<(), String> {
-    value.validate().map_err(|e| format_validation_errors(&e))
+/// Validate a struct that implements the Validate trait
+pub fn validate_struct<T: Validate>(value: &T) -> Result<(), ValidationErrors> {
+    value.validate()
 }
 
-/// Format validation errors into a readable string
+/// Format validation errors into a human-readable string
 pub fn format_validation_errors(errors: &ValidationErrors) -> String {
     let mut messages = Vec::new();
 
@@ -16,12 +16,12 @@ pub fn format_validation_errors(errors: &ValidationErrors) -> String {
                 .message
                 .as_ref()
                 .map(|m| m.to_string())
-                .unwrap_or_else(|| format!("Invalid value for {}", field));
-            messages.push(format!("{}: {}", field, message));
+                .unwrap_or_else(|| format!("Validation failed for field: {}", field));
+            messages.push(message);
         }
     }
 
-    messages.join(", ")
+    messages.join("; ")
 }
 
 #[cfg(test)]
@@ -32,25 +32,16 @@ mod tests {
 
     #[derive(Debug, Validate)]
     struct TestStruct {
-        #[validate(length(min = 1, message = "name is required"))]
+        #[validate(length(min = 1, max = 10))]
         name: String,
-
-        #[validate(length(min = 3, max = 50))]
-        username: String,
-
-        #[validate(email)]
-        email: String,
-
-        #[validate(range(min = 0, max = 120))]
+        #[validate(range(min = 0, max = 100))]
         age: i32,
     }
 
     #[test]
-    fn test_valid_struct() {
+    fn test_validate_struct_success() {
         let test = TestStruct {
-            name: "John".to_string(),
-            username: "john_doe".to_string(),
-            email: "john@example.com".to_string(),
+            name: "test".to_string(),
             age: 25,
         };
 
@@ -58,31 +49,29 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_struct() {
+    fn test_validate_struct_failure() {
         let test = TestStruct {
-            name: "".to_string(),
-            username: "ab".to_string(),
-            email: "invalid-email".to_string(),
-            age: 150,
+            name: "".to_string(), // Too short
+            age: 150,             // Out of range
         };
 
         let result = validate_struct(&test);
         assert!(result.is_err());
 
-        let error_msg = result.unwrap_err();
-        assert!(error_msg.contains("name"));
+        if let Err(errors) = result {
+            assert!(errors.field_errors().contains_key("name"));
+            assert!(errors.field_errors().contains_key("age"));
+        }
     }
 
     #[test]
-    fn test_format_errors() {
+    fn test_format_validation_errors() {
         let test = TestStruct {
             name: "".to_string(),
-            username: "ab".to_string(),
-            email: "john@example.com".to_string(),
-            age: 25,
+            age: 150,
         };
 
-        if let Err(errors) = test.validate() {
+        if let Err(errors) = validate_struct(&test) {
             let formatted = format_validation_errors(&errors);
             assert!(!formatted.is_empty());
         }

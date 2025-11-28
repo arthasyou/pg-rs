@@ -9,8 +9,8 @@ pub use pg_core::{
 // Entity definitions
 pub mod entity;
 
-// Business logic modules
-pub mod prompt;
+// Business logic modules - domain layer
+pub mod domain;
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,6 @@
 pub mod pagination;
 pub mod repository;
+pub mod select_ext;
 pub mod validate;
 
 // Re-export commonly used types
