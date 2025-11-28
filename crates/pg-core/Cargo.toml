@@ -9,3 +9,5 @@ tokio.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 serde.workspace = true
+validator.workspace = true
+async-trait.workspace = true

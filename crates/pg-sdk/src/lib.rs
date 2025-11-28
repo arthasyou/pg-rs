@@ -1,17 +1,13 @@
 // Re-export pg-core for convenience
 pub use pg_core;
-// Re-export sea_orm for convenience
-pub use sea_orm;
-
-// Error types
-pub mod error;
-pub use error::{Result, SdkError};
+// Re-export core utilities from pg-core
+pub use pg_core::{
+    BaseRepository, PaginatedResponse, PaginationParams, PgError as SdkError, Repository, Result,
+    Validate, ValidationError, ValidationErrors, format_validation_errors, validate_struct,
+};
 
 // Entity definitions
 pub mod entity;
-
-// Core utilities (pagination, repository, validation)
-pub mod core;
 
 // Business logic modules
 pub mod prompt;

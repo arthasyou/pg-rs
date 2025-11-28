@@ -2,9 +2,19 @@ mod config;
 mod error;
 mod manager;
 
-// Re-export core types
+pub mod common;
+
+// Re-export database types
+// Re-export core utilities
+pub use common::{
+    pagination::{PaginatedResponse, PaginationParams},
+    repository::{BaseRepository, Repository},
+    validate::{
+        Validate, ValidationError, ValidationErrors, format_validation_errors, validate_struct,
+    },
+};
 pub use config::DatabaseConfig;
-pub use error::{DatabaseError, Result};
+pub use error::{DatabaseError, PgError, Result};
 pub use manager::DatabaseManager;
 // Re-export sea_orm for convenience
 pub use sea_orm;

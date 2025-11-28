@@ -3,9 +3,9 @@ use time::OffsetDateTime;
 use validator::Validate;
 
 use crate::{
-    core::validate::validate_struct,
+    Result, SdkError,
     entity::prompt::{self, Entity as Prompt},
-    error::{Result, SdkError},
+    validate_struct,
 };
 
 /// Create prompt request
