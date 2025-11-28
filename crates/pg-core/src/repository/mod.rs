@@ -5,7 +5,7 @@ use sea_orm::{prelude::*, *};
 
 use crate::{
     error::Result,
-    query::{PaginatedResponse, PaginationParams, SelectExt},
+    query::{OrderBy, PaginatedResponse, PaginationParams, SelectExt},
 };
 
 /// Generic repository trait for common CRUD operations
@@ -72,13 +72,23 @@ where
     /// Find entities with pagination
     async fn find_paginated(
         &self,
-        params: &PaginationParams,
-        query: Select<E>,
+        filter: Option<Condition>,
+        page: &PaginationParams,
+        ob: Option<&OrderBy<E>>,
     ) -> Result<PaginatedResponse<M>> {
-        let list_query = query.clone().pagination(params);
+        let query = match filter {
+            Some(f) => self.query_filtered(f),
+            None => self.query(),
+        };
+
+        let list_query = match ob {
+            Some(ob) => query.clone().apply_order(ob).pagination(page),
+            None => query.clone().pagination(page),
+        };
+
         let items = self.select_all(list_query).await?;
         let total = query.total_count(self.db()).await;
-        Ok(PaginatedResponse::new(items, params, total))
+        Ok(PaginatedResponse::new(items, page, total))
     }
 
     /// Insert a new entity

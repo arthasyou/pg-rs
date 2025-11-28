@@ -9,7 +9,7 @@ pub mod repository;
 pub use config::DatabaseConfig;
 pub use error::{PgError, Result};
 pub use manager::DatabaseManager;
-pub use query::{PaginatedResponse, PaginationParams};
+pub use query::{OrderBy, PaginatedResponse, PaginationParams};
 pub use repository::{Repository, base::BaseRepository};
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
-use sea_orm::{DatabaseConnection, EntityTrait, QuerySelect, Select, prelude::Expr};
+use sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect, Select, prelude::Expr};
 
 use super::PaginationParams;
+use crate::query::{OrderBy, SortOrder};
 
 #[async_trait::async_trait]
 pub trait SelectExt<E>
@@ -8,6 +9,8 @@ where
     E: EntityTrait,
 {
     fn pagination(self, params: &PaginationParams) -> Self;
+
+    fn apply_order(self, order: &OrderBy<E>) -> Self;
 
     async fn total_count(self, db: &DatabaseConnection) -> u64;
 }
@@ -20,6 +23,20 @@ where
     fn pagination(self, params: &PaginationParams) -> Self {
         let params = params.clone().validate();
         self.limit(params.page_size).offset(params.offset())
+    }
+
+    fn apply_order(mut self, ob: &OrderBy<E>) -> Self {
+        {
+            match ob.order {
+                SortOrder::Asc => {
+                    self = self.order_by_asc(ob.column);
+                }
+                SortOrder::Desc => {
+                    self = self.order_by_desc(ob.column);
+                }
+            }
+        }
+        self
     }
 
     async fn total_count(self, db: &DatabaseConnection) -> u64 {

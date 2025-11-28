@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use pg_core::OrderBy;
 use sea_orm::{prelude::*, *};
 use time::OffsetDateTime;
 use validator::Validate;
@@ -137,20 +138,20 @@ impl PromptService {
         &self,
         options: ListPromptsOptions,
     ) -> Result<PaginatedResponse<prompt::Model>> {
-        let params =
-            PaginationParams::new(options.page.unwrap_or(1), options.page_size.unwrap_or(20));
+        let params = PaginationParams::default();
 
-        // Build query with filter and order
-        let mut query = self.repo.query();
+        let mut filter = Condition::all();
 
         if options.only_active {
-            query = query.filter(prompt::Column::IsActive.eq(true));
+            filter = filter.add(prompt::Column::IsActive.eq(true));
         }
 
-        query = query.order_by_desc(prompt::Column::UpdateTime);
+        let ob = OrderBy::desc(prompt::Column::UpdateTime);
 
         // Use repository's find_paginated
-        self.repo.find_paginated(&params, query).await
+        self.repo
+            .find_paginated(Some(filter), &params, Some(&ob))
+            .await
     }
 
     /// Get all versions of a prompt
