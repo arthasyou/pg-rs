@@ -121,7 +121,7 @@ impl PromptService {
                     .add(prompt::Column::Id.eq(parent_id))
                     .add(prompt::Column::ParentId.eq(parent_id)),
             )
-            .exec(&*self.db())
+            .exec(self.db())
             .await?;
 
         Ok(())

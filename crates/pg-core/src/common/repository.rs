@@ -90,7 +90,7 @@ where
         let total = base.total_count(self.db()).await;
 
         // 6) return paginated response
-        Ok(PaginatedResponse::new(items, &params, total))
+        Ok(PaginatedResponse::new(items, params, total))
     }
 
     /// Insert a new entity
