@@ -2,4 +2,14 @@
 
 pub mod prelude;
 
+pub mod blood_pressure_records;
+pub mod blood_routine_records;
+pub mod body_records;
+pub mod lipid_records;
+pub mod liver_function_records;
+pub mod other_metrics_records;
 pub mod prompt;
+pub mod renal_function_records;
+pub mod sleep_records;
+pub mod urine_records;
+pub mod users;

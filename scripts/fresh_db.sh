@@ -47,7 +47,8 @@ fi
 echo "📦 生成 entity ..."
 sea-orm-cli generate entity \
   -o "$ENTITY_DIR" \
-  --with-serde both
+  --with-serde both \
+  --date-time-crate time
 
 if [ $? -ne 0 ]; then
   echo "❌ generate entity 失败"

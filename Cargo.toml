@@ -11,7 +11,7 @@ edition = "2024"
 
 [workspace.dependencies]
 sea-orm = { version = "2.0.0-rc", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-time"] }
-sea-orm-migration = { version = "2.0.0-rc", features = ["sqlx-postgres", "runtime-tokio-rustls"] }
+# sea-orm-migration = { version = "2.0.0-rc", features = ["sqlx-postgres", "runtime-tokio-rustls"] }
 tokio = { version = "1", features = ["full"] }
 thiserror = "2.0"
 tracing = "0.1"
