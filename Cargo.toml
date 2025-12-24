@@ -44,7 +44,3 @@ path = "examples/basic_usage.rs"
 [[example]]
 name = "multi_database"
 path = "examples/multi_database.rs"
-
-[[example]]
-name = "prompt_crud"
-path = "examples/prompt_crud.rs"

@@ -1,0 +1,76 @@
+use time::OffsetDateTime;
+
+/// Metric 表示：
+/// 一个“可被观测的指标定义”
+///
+/// 它描述的是：
+/// - 观测的“是什么”
+/// - 而不是“观测到的值”
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Metric {
+    /// 系统内稳定的指标标识
+    pub id: MetricId,
+
+    /// 稳定的语义代码（机器友好）
+    /// 例如：blood_pressure_systolic
+    pub code: MetricCode,
+
+    /// 人类可读名称
+    /// 例如：收缩压
+    pub name: String,
+
+    /// 单位（可选）
+    /// 例如：mmHg、mg/dL
+    pub unit: Option<String>,
+
+    /// 指标值的类型定义
+    pub value_type: MetricValueType,
+
+    /// 指标当前状态
+    pub status: MetricStatus,
+
+    /// 创建时间（审计用途）
+    pub created_at: OffsetDateTime,
+}
+
+/// Metric 的强类型 ID
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MetricId(pub i64);
+
+/// 指标的稳定代码
+///
+/// 使用新类型而不是 String，
+/// 是为了在 domain 中避免“裸字符串”横飞
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MetricCode(pub String);
+
+/// 指标值的类型定义
+///
+/// 注意：
+/// 这是“语义类型”，
+/// 不是数据库类型
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MetricValueType {
+    Integer,
+    Float,
+    Decimal,
+    Boolean,
+    Text,
+}
+
+/// 指标的生命周期状态
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MetricStatus {
+    /// 正常使用中
+    Active,
+
+    /// 已废弃（历史数据仍然有效）
+    Deprecated,
+}
+
+impl Metric {
+    /// 判断该指标是否仍然可用于新观测
+    pub fn is_active(&self) -> bool {
+        matches!(self.status, MetricStatus::Active)
+    }
+}

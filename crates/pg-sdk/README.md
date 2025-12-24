@@ -5,6 +5,7 @@ Business logic and data access layer for PostgreSQL operations.
 ## Purpose
 
 `pg-sdk` provides the business logic layer built on top of `pg-core`, including:
+
 - Entity definitions (SeaORM models)
 - Business logic and operations
 - Data access patterns
