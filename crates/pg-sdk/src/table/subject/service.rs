@@ -42,13 +42,13 @@ impl SubjectService {
 
         let model = self.repo.insert(active).await?;
 
-        Ok(Self::to_domain(model))
+        Ok(Self::from_model(model))
     }
 
     /// 根据 ID 获取 Subject
     pub async fn get(&self, id: SubjectId) -> Result<Option<Subject>> {
         let model = self.repo.find_by_id(id.0).await?;
-        Ok(model.map(Self::to_domain))
+        Ok(model.map(Self::from_model))
     }
 
     /// 判断 Subject 是否存在
@@ -60,7 +60,7 @@ impl SubjectService {
     /// 内部映射
     /// ===============================
 
-    fn to_domain(model: subject::Model) -> Subject {
+    fn from_model(model: subject::Model) -> Subject {
         Subject {
             id: SubjectId(model.subject_id),
             kind: SubjectKind::from(model.subject_type),
