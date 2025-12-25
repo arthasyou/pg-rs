@@ -21,6 +21,18 @@ pub struct Subject {
     pub created_at: PrimitiveDateTime,
 }
 
+/// 创建 Subject 的输入参数
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CreateSubject {
+    pub kind: SubjectKind,
+}
+
+/// 查询 Subject 的输入参数
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListSubject {
+    pub kind: Option<SubjectKind>,
+}
+
 /// Subject 的强类型 ID
 /// 目的是避免在 domain 中随意传递裸整数
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

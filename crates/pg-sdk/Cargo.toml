@@ -9,6 +9,7 @@ sea-orm.workspace = true
 tokio.workspace = true
 thiserror.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 validator.workspace = true
 time.workspace = true
 async-trait.workspace = true

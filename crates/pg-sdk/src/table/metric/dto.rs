@@ -1,4 +1,6 @@
-use time::OffsetDateTime;
+use core::fmt;
+
+use time::PrimitiveDateTime;
 
 /// Metric 表示：
 /// 一个“可被观测的指标定义”
@@ -30,7 +32,23 @@ pub struct Metric {
     pub status: MetricStatus,
 
     /// 创建时间（审计用途）
-    pub created_at: OffsetDateTime,
+    pub created_at: PrimitiveDateTime,
+}
+
+/// 创建 Metric 的输入参数
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CreateMetric {
+    pub code: MetricCode,
+    pub name: String,
+    pub unit: Option<String>,
+    pub value_type: MetricValueType,
+}
+
+/// 查询 Metric 的输入参数
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListMetric {
+    pub status: Option<MetricStatus>,
+    pub value_type: Option<MetricValueType>,
 }
 
 /// Metric 的强类型 ID
@@ -66,6 +84,76 @@ pub enum MetricStatus {
 
     /// 已废弃（历史数据仍然有效）
     Deprecated,
+}
+
+impl fmt::Display for MetricValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MetricValueType::Integer => write!(f, "int"),
+            MetricValueType::Float => write!(f, "float"),
+            MetricValueType::Decimal => write!(f, "decimal"),
+            MetricValueType::Boolean => write!(f, "bool"),
+            MetricValueType::Text => write!(f, "text"),
+        }
+    }
+}
+
+impl From<&str> for MetricValueType {
+    fn from(value: &str) -> Self {
+        match value {
+            "int" => MetricValueType::Integer,
+            "float" => MetricValueType::Float,
+            "decimal" => MetricValueType::Decimal,
+            "bool" => MetricValueType::Boolean,
+            "text" => MetricValueType::Text,
+            "string" => MetricValueType::Text,
+            other => {
+                let normalized = other.trim().to_ascii_lowercase();
+                match normalized.as_str() {
+                    "integer" => MetricValueType::Integer,
+                    "boolean" => MetricValueType::Boolean,
+                    _ => MetricValueType::Text,
+                }
+            }
+        }
+    }
+}
+
+impl From<String> for MetricValueType {
+    fn from(value: String) -> Self {
+        MetricValueType::from(value.as_str())
+    }
+}
+
+impl fmt::Display for MetricStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MetricStatus::Active => write!(f, "active"),
+            MetricStatus::Deprecated => write!(f, "deprecated"),
+        }
+    }
+}
+
+impl From<&str> for MetricStatus {
+    fn from(value: &str) -> Self {
+        match value {
+            "active" => MetricStatus::Active,
+            "deprecated" => MetricStatus::Deprecated,
+            other => {
+                let normalized = other.trim().to_ascii_lowercase();
+                match normalized.as_str() {
+                    "deprecated" => MetricStatus::Deprecated,
+                    _ => MetricStatus::Active,
+                }
+            }
+        }
+    }
+}
+
+impl From<String> for MetricStatus {
+    fn from(value: String) -> Self {
+        MetricStatus::from(value.as_str())
+    }
 }
 
 impl Metric {

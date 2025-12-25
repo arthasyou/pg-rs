@@ -1,8 +1,10 @@
 // pg-sdk/src/core/observation.rs
 
-use time::OffsetDateTime;
+use time::PrimitiveDateTime;
 
-use crate::table::{metric::dto::MetricId, subject::dto::SubjectId};
+use crate::table::{
+    data_source::dto::DataSourceId, metric::dto::MetricId, subject::dto::SubjectId,
+};
 
 /// Observation 表示：
 /// 一次已经发生的“观测事实”
@@ -27,10 +29,44 @@ pub struct Observation {
     pub value: ObservationValue,
 
     /// 事实发生时间（设备时间 / 业务时间）
-    pub observed_at: OffsetDateTime,
+    pub observed_at: PrimitiveDateTime,
 
     /// 系统记录时间（写入时间）
-    pub recorded_at: OffsetDateTime,
+    pub recorded_at: PrimitiveDateTime,
+
+    /// 数据来源（可选）
+    pub source_id: Option<DataSourceId>,
+}
+
+/// 记录 Observation 的输入参数
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordObservation {
+    pub subject_id: SubjectId,
+    pub metric_id: MetricId,
+    pub value: ObservationValue,
+    pub observed_at: PrimitiveDateTime,
+    pub source_id: Option<DataSourceId>,
+}
+
+/// 按 Subject 查询 Observation 的输入参数
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListObservationBySubject {
+    pub subject_id: SubjectId,
+}
+
+/// 按 Metric 查询 Observation 的输入参数
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListObservationByMetric {
+    pub metric_id: MetricId,
+}
+
+/// 按时间范围查询 Observation 的输入参数
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListObservationByTimeRange {
+    pub start: PrimitiveDateTime,
+    pub end: PrimitiveDateTime,
+    pub subject_id: Option<SubjectId>,
+    pub metric_id: Option<MetricId>,
 }
 
 /// Observation 的强类型 ID
@@ -45,27 +81,3 @@ pub struct ObservationId(pub i64);
 /// - 解析/校验放在 service / business 层
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservationValue(pub String);
-
-impl Observation {
-    /// 创建一个新的观测事实（尚未持久化）
-    ///
-    /// 注意：
-    /// - 不在这里生成 id
-    /// - 不在这里做业务校验
-    pub fn new(
-        subject_id: SubjectId,
-        metric_id: MetricId,
-        value: impl Into<String>,
-        observed_at: OffsetDateTime,
-        recorded_at: OffsetDateTime,
-    ) -> Self {
-        Self {
-            id: ObservationId(0), // 占位，实际由存储层生成
-            subject_id,
-            metric_id,
-            value: ObservationValue(value.into()),
-            observed_at,
-            recorded_at,
-        }
-    }
-}

@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
-use pg_core::impl_repository;
+use pg_core::{OrderBy, PaginatedResponse, impl_repository};
 use sea_orm::{prelude::*, *};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
 use crate::{
     Repository, Result,
     entity::{prelude::Subject as SubjectEntity, subject},
-    table::subject::dto::{Subject, SubjectId, SubjectKind},
+    table::{
+        dto::PaginationInput,
+        subject::dto::{CreateSubject, ListSubject, Subject, SubjectId, SubjectKind},
+    },
 };
 
 impl_repository!(SubjectRepo, SubjectEntity, subject::Model);
@@ -30,12 +33,12 @@ impl SubjectService {
     }
 
     /// 创建一个新的 Subject
-    pub async fn create(&self, kind: SubjectKind) -> Result<Subject> {
+    pub async fn create(&self, input: CreateSubject) -> Result<Subject> {
         let now_offset = OffsetDateTime::now_utc();
         let now = PrimitiveDateTime::new(now_offset.date(), now_offset.time());
 
         let active = subject::ActiveModel {
-            subject_type: Set(kind.to_string()),
+            subject_type: Set(input.kind.to_string()),
             created_at: Set(now),
             ..Default::default()
         };
@@ -54,6 +57,31 @@ impl SubjectService {
     /// 判断 Subject 是否存在
     pub async fn exists(&self, id: SubjectId) -> Result<bool> {
         self.repo.exists_by_id(id.0).await
+    }
+
+    /// 查询 Subject（可选按类型过滤）
+    pub async fn list(
+        &self,
+        input: ListSubject,
+        pagination: Option<PaginationInput>,
+    ) -> Result<PaginatedResponse<Subject>> {
+        let mut condition = Condition::all();
+        let mut has_condition = false;
+
+        if let Some(kind) = input.kind {
+            condition = condition.add(subject::Column::SubjectType.eq(kind.to_string()));
+            has_condition = true;
+        }
+
+        let condition = if has_condition { Some(condition) } else { None };
+        let order_by = OrderBy::desc(subject::Column::CreatedAt);
+        let params = pagination.unwrap_or_default().to_params();
+
+        let response = self
+            .repo
+            .find_paginated(condition, &params, Some(&order_by))
+            .await?;
+        Ok(response.map(Self::from_model))
     }
 
     /// ===============================
