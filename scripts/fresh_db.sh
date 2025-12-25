@@ -15,7 +15,7 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # migration 目录
 MIGRATION_DIR="$PROJECT_ROOT/crates/migration"
 # entity 生成输出目录
-ENTITY_DIR="$PROJECT_ROOT/crates/pg-sdk/src/entity"
+ENTITY_DIR="$PROJECT_ROOT/crates/pg-tables/src/entity"
 
 echo "============================================"
 echo " SeaORM 一键执行工具"

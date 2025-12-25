@@ -1,10 +1,10 @@
-# pg-sdk
+# pg-tables
 
 Business logic and data access layer for PostgreSQL operations.
 
 ## Purpose
 
-`pg-sdk` provides the business logic layer built on top of `pg-core`, including:
+`pg-tables` provides the business logic layer built on top of `pg-core`, including:
 
 - Entity definitions (SeaORM models)
 - Business logic and operations
@@ -13,17 +13,17 @@ Business logic and data access layer for PostgreSQL operations.
 
 ## Usage
 
-External crates should depend on both `pg-core` (for connection) and `pg-sdk` (for business logic).
+External crates should depend on both `pg-core` (for connection) and `pg-tables` (for business logic).
 
 ```toml
 [dependencies]
 pg-core = { path = "path/to/pg-rs/crates/pg-core" }
-pg-sdk = { path = "path/to/pg-rs/crates/pg-sdk" }
+pg-tables = { path = "path/to/pg-rs/crates/pg-tables" }
 ```
 
 ```rust
 use pg_core::{DatabaseConfig, DatabaseManager};
-use pg_sdk; // Your business logic
+use pg_tables; // Your business logic
 
 #[tokio::main]
 async fn main() -> pg_core::Result<()> {
@@ -35,8 +35,8 @@ async fn main() -> pg_core::Result<()> {
     let manager = DatabaseManager::new(vec![config]).await?;
     let db = manager.default()?;
 
-    // 2. Use pg-sdk business logic with the connection
-    // let prompts = pg_sdk::prompt::list_all(db).await?;
+    // 2. Use pg-tables business logic with the connection
+    // let prompts = pg_tables::prompt::list_all(db).await?;
 
     Ok(())
 }
@@ -44,8 +44,8 @@ async fn main() -> pg_core::Result<()> {
 
 ## Architecture
 
-- **pg-core**: Connection management (imported by pg-sdk)
-- **pg-sdk**: Business logic and entities (this crate)
+- **pg-core**: Connection management (imported by pg-tables)
+- **pg-tables**: Business logic and entities (this crate)
 - Your app: Uses both for complete functionality
 
 ## Why Two Crates?

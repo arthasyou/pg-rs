@@ -1,4 +1,4 @@
-// pg-sdk/src/core/observation.rs
+// pg-tables/src/core/observation.rs
 
 use time::PrimitiveDateTime;
 

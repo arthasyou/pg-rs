@@ -11,7 +11,7 @@ PostgreSQL connection management layer built on SeaORM.
 
 ## Usage
 
-This crate is typically used together with `pg-sdk` which provides business logic.
+This crate is typically used together with `pg-tables` which provides business logic.
 
 ```rust
 use pg_core::{DatabaseConfig, DatabaseManager};
@@ -28,7 +28,7 @@ async fn main() -> pg_core::Result<()> {
     let manager = DatabaseManager::new(vec![config]).await?;
     let db = manager.default()?;
 
-    // Pass db to your business logic layer (pg-sdk)
+    // Pass db to your business logic layer (pg-tables)
 
     Ok(())
 }

@@ -63,7 +63,7 @@ migrate-gen:
 
 # Generate entities
 generate-entity:
-	sea-orm-cli generate entity -o crates/pg-sdk/src/entity --with-serde both
+	sea-orm-cli generate entity -o crates/pg-tables/src/entity --with-serde both
 
 # Run examples
 example-basic:

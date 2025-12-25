@@ -12,7 +12,7 @@ A layered PostgreSQL SDK for Rust built on SeaORM.
          ├──────────────┬──────────────┐
          │              │              │
     ┌────▼─────┐   ┌───▼────┐   ┌────▼──────┐
-    │ pg-core  │   │ pg-sdk │   │ migration │
+    │ pg-core  │   │ pg-tables │   │ migration │
     └──────────┘   └────────┘   └───────────┘
          │              │
          └──────┬───────┘
@@ -36,7 +36,7 @@ A layered PostgreSQL SDK for Rust built on SeaORM.
 pg-core = { path = "path/to/pg-rs/crates/pg-core" }
 ```
 
-### pg-sdk
+### pg-tables
 **Business logic and data access layer**
 
 - Entity definitions (SeaORM models)
@@ -45,7 +45,7 @@ pg-core = { path = "path/to/pg-rs/crates/pg-core" }
 
 ```toml
 [dependencies]
-pg-sdk = { path = "path/to/pg-rs/crates/pg-sdk" }
+pg-tables = { path = "path/to/pg-rs/crates/pg-tables" }
 ```
 
 ### migration
@@ -67,7 +67,7 @@ sea-orm-cli migrate generate new_table -d crates/migration
 ```toml
 [dependencies]
 pg-core = { path = "path/to/pg-rs/crates/pg-core" }
-pg-sdk = { path = "path/to/pg-rs/crates/pg-sdk" }
+pg-tables = { path = "path/to/pg-rs/crates/pg-tables" }
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -88,7 +88,7 @@ async fn main() -> pg_core::Result<()> {
     let manager = DatabaseManager::new(vec![config]).await?;
     let db = manager.default()?;
 
-    // Use db with pg-sdk business logic
+    // Use db with pg-tables business logic
     
     Ok(())
 }
@@ -111,7 +111,7 @@ let replica_db = manager.get("replica")?;
 
 ## Examples
 
-The project includes runnable examples demonstrating how to use pg-core and pg-sdk:
+The project includes runnable examples demonstrating how to use pg-core and pg-tables:
 
 ```bash
 # List available examples
@@ -180,16 +180,16 @@ cargo test
 
 # Build specific crate
 cargo build -p pg-core
-cargo build -p pg-sdk
+cargo build -p pg-tables
 ```
 
 ## Design Philosophy
 
-### Why Separate pg-core and pg-sdk?
+### Why Separate pg-core and pg-tables?
 
 1. **Separation of Concerns**
    - pg-core: Infrastructure (connections, pools)
-   - pg-sdk: Business logic (entities, operations)
+   - pg-tables: Business logic (entities, operations)
 
 2. **Flexibility**
    - Apps can choose which business logic to include

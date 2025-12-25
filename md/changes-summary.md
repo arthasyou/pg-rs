@@ -1,4 +1,4 @@
-# pg-sdk 表层改动详细总结
+# pg-tables 表层改动详细总结
 
 > 目的：让评估方可以直接理解“做了什么、为什么做、影响到哪些 API 与数据结构”。
 
@@ -179,7 +179,7 @@
 ## 6. 依赖与配置变更
 - 新增 `serde_json` 作为 `data_source.metadata` 的承载类型。
   - `Cargo.toml`（workspace）新增 `serde_json = "1.0"`
-  - `crates/pg-sdk/Cargo.toml` 引入 `serde_json.workspace = true`
+  - `crates/pg-tables/Cargo.toml` 引入 `serde_json.workspace = true`
 
 ---
 
@@ -208,17 +208,17 @@
 ---
 
 ## 8. 涉及文件清单
-- `crates/pg-sdk/src/table/dto.rs`
-- `crates/pg-sdk/src/table/subject/dto.rs`
-- `crates/pg-sdk/src/table/subject/service.rs`
-- `crates/pg-sdk/src/table/metric/dto.rs`
-- `crates/pg-sdk/src/table/metric/service.rs`
-- `crates/pg-sdk/src/table/observation/dto.rs`
-- `crates/pg-sdk/src/table/observation/service.rs`
-- `crates/pg-sdk/src/table/data_source/dto.rs`
-- `crates/pg-sdk/src/table/data_source/service.rs`
+- `crates/pg-tables/src/table/dto.rs`
+- `crates/pg-tables/src/table/subject/dto.rs`
+- `crates/pg-tables/src/table/subject/service.rs`
+- `crates/pg-tables/src/table/metric/dto.rs`
+- `crates/pg-tables/src/table/metric/service.rs`
+- `crates/pg-tables/src/table/observation/dto.rs`
+- `crates/pg-tables/src/table/observation/service.rs`
+- `crates/pg-tables/src/table/data_source/dto.rs`
+- `crates/pg-tables/src/table/data_source/service.rs`
 - `Cargo.toml`
-- `crates/pg-sdk/Cargo.toml`
+- `crates/pg-tables/Cargo.toml`
 
 ---
 

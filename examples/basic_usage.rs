@@ -1,4 +1,4 @@
-/// Basic example demonstrating how to use pg-core and pg-sdk
+/// Basic example demonstrating how to use pg-core and pg-tables
 ///
 /// Run with: cargo run --example basic_usage
 ///
@@ -16,7 +16,7 @@ async fn main() -> pg_core::Result<()> {
     // Initialize tracing for logs
     tracing_subscriber::fmt::init();
 
-    println!("=== Basic pg-core and pg-sdk Usage Example ===\n");
+    println!("=== Basic pg-core and pg-tables Usage Example ===\n");
 
     // Get database URL from environment or use default
     let database_url = std::env::var("DATABASE_URL")
@@ -55,10 +55,10 @@ async fn main() -> pg_core::Result<()> {
     println!("   - Total databases: {}", manager.count());
     println!("   - Database list: {:?}\n", manager.list_databases());
 
-    // Example: Using pg-sdk (currently just demonstrates the import)
-    println!("6. pg-sdk is available for business logic:");
-    println!("   - pg_sdk::sea_orm available: ✓");
-    println!("   - pg_sdk::pg_core available: ✓\n");
+    // Example: Using pg-tables (currently just demonstrates the import)
+    println!("6. pg-tables is available for business logic:");
+    println!("   - pg_tables::sea_orm available: ✓");
+    println!("   - pg_tables::pg_core available: ✓\n");
 
     // Gracefully close connections
     println!("7. Closing database connections...");

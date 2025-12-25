@@ -28,7 +28,7 @@ Complete database refresh and entity generation workflow.
 **What it does:**
 1. Runs `migrate refresh` - drops all tables and re-runs all migrations
 2. Generates SeaORM entities from the current database schema
-3. Outputs entities to `crates/pg-sdk/src/entity`
+3. Outputs entities to `crates/pg-tables/src/entity`
 
 **Usage:**
 ```bash

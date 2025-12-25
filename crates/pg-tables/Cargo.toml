@@ -1,5 +1,5 @@
 [package]
-name = "pg-sdk"
+name = "pg-tables"
 version.workspace = true
 edition.workspace = true
 

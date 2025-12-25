@@ -1271,14 +1271,14 @@ version = "0.1.0"
 dependencies = [
  "dotenvy",
  "pg-core",
- "pg-sdk",
+ "pg-tables",
  "tokio",
  "tracing",
  "tracing-subscriber",
 ]
 
 [[package]]
-name = "pg-sdk"
+name = "pg-tables"
 version = "0.1.0"
 dependencies = [
  "async-trait",

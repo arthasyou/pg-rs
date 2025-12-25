@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-CONTAINER_NAME="pg-sdk"
-DATA_DIR="$HOME/db/postgres-sdk/"
+CONTAINER_NAME="pg-tables"
+DATA_DIR="$HOME/db/postgres-tables/"
 POSTGRES_PASSWORD="123456"
 PORT="15432"
 IMAGE="postgres:latest"

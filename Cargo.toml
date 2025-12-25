@@ -31,7 +31,7 @@ edition.workspace = true
 
 [dependencies]
 pg-core = { path = "crates/pg-core" }
-pg-sdk = { path = "crates/pg-sdk" }
+pg-tables = { path = "crates/pg-tables" }
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

@@ -1,6 +1,6 @@
 # Examples
 
-This directory contains examples demonstrating how to use pg-core and pg-sdk.
+This directory contains examples demonstrating how to use pg-core and pg-tables.
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ This directory contains examples demonstrating how to use pg-core and pg-sdk.
 
 ### Basic Usage
 
-Demonstrates basic connection and usage of pg-core and pg-sdk:
+Demonstrates basic connection and usage of pg-core and pg-tables:
 
 ```bash
 # Using default connection
