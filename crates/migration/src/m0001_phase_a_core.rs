@@ -189,14 +189,14 @@ impl MigrationTrait for Migration {
                     //         .on_delete(ForeignKeyAction::Cascade)
                     //         .on_update(ForeignKeyAction::Cascade),
                     // )
-                    // .foreign_key(
-                    //     ForeignKey::create()
-                    //         .name("fk_observation_metric")
-                    //         .from(Observation::Table, Observation::MetricId)
-                    //         .to(Metric::Table, Metric::MetricId)
-                    //         .on_delete(ForeignKeyAction::Restrict)
-                    //         .on_update(ForeignKeyAction::Cascade),
-                    // )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_observation_metric")
+                            .from(Observation::Table, Observation::MetricId)
+                            .to(Metric::Table, Metric::MetricId)
+                            .on_delete(ForeignKeyAction::Restrict)
+                            .on_update(ForeignKeyAction::Cascade),
+                    )
                     // .foreign_key(
                     //     ForeignKey::create()
                     //         .name("fk_observation_source")

@@ -2,18 +2,21 @@ use std::sync::Arc;
 
 use sea_orm::DatabaseConnection;
 
+use crate::DbContext;
+
 /// Base repository implementation
 pub struct BaseRepository {
-    db: Arc<DatabaseConnection>,
+    ctx: DbContext,
 }
 
 impl BaseRepository {
     /// Create a new base repository
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
-        Self { db }
+    pub fn new(ctx: DbContext) -> Self {
+        Self { ctx }
     }
 
+    /// 仅供 pg-tables 内部使用
     pub fn db(&self) -> &DatabaseConnection {
-        &self.db
+        self.ctx.inner()
     }
 }

@@ -1,0 +1,9 @@
+[package]
+name = "demo-db"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+time.workspace = true
+thiserror.workspace = true
+pg-tables.workspace = true

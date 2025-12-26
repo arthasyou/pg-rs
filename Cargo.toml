@@ -3,7 +3,7 @@ members = [
     "crates/*",
 ]
 
-resolver = "2"
+resolver = "3"
 
 [workspace.package]
 version = "0.1.0"
@@ -14,34 +14,38 @@ sea-orm = { version = "2.0.0-rc", features = ["sqlx-postgres", "runtime-tokio-ru
 # sea-orm-migration = { version = "2.0.0-rc", features = ["sqlx-postgres", "runtime-tokio-rustls"] }
 tokio = { version = "1", features = ["full"] }
 thiserror = "2.0"
-tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.22"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde_json = "1.0.147"
 dotenvy = "0.15"
-validator = { version = "0.18", features = ["derive"] }
+validator = { version = "0.20", features = ["derive"] }
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing"] }
 async-trait = "0.1"
 
-# Root package for examples
-[package]
-name = "pg-rs"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
+# individual crates
 pg-core = { path = "crates/pg-core" }
 pg-tables = { path = "crates/pg-tables" }
-tokio.workspace = true
-tracing.workspace = true
-tracing-subscriber.workspace = true
-dotenvy.workspace = true
+
+# Root package for examples
+# [package]
+# name = "pg-rs"
+# version.workspace = true
+# edition.workspace = true
+
+# [dependencies]
+# pg-core.workspace = true
+# pg-tables.workspace = true
+# tokio.workspace = true
+# tracing.workspace = true
+# tracing-subscriber.workspace = true
+# dotenvy.workspace = true
 
 # Examples
-[[example]]
-name = "basic_usage"
-path = "examples/basic_usage.rs"
+# [[example]]
+# name = "basic_usage"
+# path = "examples/basic_usage.rs"
 
-[[example]]
-name = "multi_database"
-path = "examples/multi_database.rs"
+# [[example]]
+# name = "multi_database"
+# path = "examples/multi_database.rs"

@@ -55,6 +55,18 @@ pub struct ListMetric {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MetricId(pub i64);
 
+impl From<i64> for MetricId {
+    fn from(value: i64) -> Self {
+        MetricId(value)
+    }
+}
+
+impl From<MetricId> for i64 {
+    fn from(id: MetricId) -> Self {
+        id.0
+    }
+}
+
 /// 指标的稳定代码
 ///
 /// 使用新类型而不是 String，

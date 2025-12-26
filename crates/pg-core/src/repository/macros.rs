@@ -7,7 +7,7 @@ macro_rules! impl_repository {
         }
 
         impl $struct_name {
-            pub fn new(db: std::sync::Arc<sea_orm::DatabaseConnection>) -> Self {
+            pub fn new(db: $crate::DbContext) -> Self {
                 Self {
                     base: $crate::BaseRepository::new(db),
                 }

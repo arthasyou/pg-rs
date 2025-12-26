@@ -38,6 +38,18 @@ pub struct ListSubject {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SubjectId(pub i64);
 
+impl From<i64> for SubjectId {
+    fn from(value: i64) -> Self {
+        SubjectId(value)
+    }
+}
+
+impl From<SubjectId> for i64 {
+    fn from(id: SubjectId) -> Self {
+        id.0
+    }
+}
+
 /// Subject 的语义类型
 ///
 /// 这是一个“可演进的枚举”，

@@ -1,6 +1,6 @@
-mod order;
-mod pagination;
-mod select_ext;
+pub mod order;
+pub mod pagination;
+pub mod select_ext;
 
 pub use self::{
     order::{OrderBy, SortOrder},

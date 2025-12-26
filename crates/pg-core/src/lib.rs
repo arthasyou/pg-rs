@@ -2,15 +2,52 @@ mod config;
 mod error;
 mod manager;
 
-mod query;
+pub mod query;
 pub mod repository;
 
 // Re-export core utilities
+// pg-tables/src/db.rs
+use std::sync::Arc;
+
 pub use config::DatabaseConfig;
 pub use error::{PgError, Result};
 pub use manager::DatabaseManager;
 pub use query::{OrderBy, PaginatedResponse, PaginationParams};
 pub use repository::{Repository, base::BaseRepository};
+use sea_orm::{Database, DatabaseConnection};
+
+/// pg-tables 对外暴露的数据库上下文
+///
+/// 约定：
+/// - 外部 crate 只能“拿着它用”
+/// - 不能依赖 SeaORM
+#[derive(Clone)]
+pub struct DbContext {
+    inner: Arc<DatabaseConnection>,
+}
+
+impl DbContext {
+    pub(crate) fn new(db: Arc<DatabaseConnection>) -> Self {
+        Self { inner: db }
+    }
+
+    pub(crate) fn inner(&self) -> &DatabaseConnection {
+        &self.inner
+    }
+}
+
+/// ===============================
+/// 对外唯一入口：创建 DbContext
+/// ===============================
+
+/// 创建数据库上下文（pg-tables 统一入口）
+///
+/// - 外部只提供连接字符串
+/// - SeaORM 只存在于 pg-tables 内
+pub async fn create_db_context(database_url: &str) -> Result<DbContext> {
+    let conn = Database::connect(database_url).await?;
+    Ok(DbContext::new(Arc::new(conn)))
+}
 
 #[cfg(test)]
 mod tests {

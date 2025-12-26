@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use pg_core::{OrderBy, PaginatedResponse, impl_repository};
+use pg_core::{DbContext, OrderBy, PaginatedResponse, impl_repository};
 use sea_orm::{prelude::*, *};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
@@ -9,11 +7,11 @@ use crate::{
     entity::{observation, prelude::Observation as ObservationEntity},
     table::{
         data_source::dto::DataSourceId,
-        dto::PaginationInput,
+        dto::{PaginationInput, Range},
         metric::dto::MetricId,
         observation::dto::{
-            ListObservationByMetric, ListObservationBySubject, ListObservationByTimeRange,
-            Observation, ObservationId, ObservationValue, RecordObservation,
+            Observation, ObservationId, ObservationPoint, ObservationQueryKey, ObservationValue,
+            RecordObservation,
         },
         subject::dto::SubjectId,
     },
@@ -31,9 +29,9 @@ pub struct ObservationService {
 
 impl ObservationService {
     /// 创建 service
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
+    pub fn new(ctx: DbContext) -> Self {
         Self {
-            repo: ObservationRepo::new(db),
+            repo: ObservationRepo::new(ctx.clone()),
         }
     }
 
@@ -60,65 +58,36 @@ impl ObservationService {
         Ok(model.map(Self::from_model))
     }
 
-    /// 查询某个 Subject 的观测记录
-    pub async fn list_by_subject(
+    pub async fn query_observation(
         &self,
-        input: ListObservationBySubject,
-        pagination: Option<PaginationInput>,
-    ) -> Result<PaginatedResponse<Observation>> {
-        let condition = Condition::all().add(observation::Column::SubjectId.eq(input.subject_id.0));
-        let order_by = OrderBy::desc(observation::Column::ObservedAt);
-        let params = pagination.unwrap_or_default().to_params();
-
-        let response = self
-            .repo
-            .find_paginated(Some(condition), &params, Some(&order_by))
-            .await?;
-        Ok(response.map(Self::from_model))
-    }
-
-    /// 查询某个 Metric 的观测记录
-    pub async fn list_by_metric(
-        &self,
-        input: ListObservationByMetric,
-        pagination: Option<PaginationInput>,
-    ) -> Result<PaginatedResponse<Observation>> {
-        let condition = Condition::all().add(observation::Column::MetricId.eq(input.metric_id.0));
-        let order_by = OrderBy::desc(observation::Column::ObservedAt);
-        let params = pagination.unwrap_or_default().to_params();
-
-        let response = self
-            .repo
-            .find_paginated(Some(condition), &params, Some(&order_by))
-            .await?;
-        Ok(response.map(Self::from_model))
-    }
-
-    /// 按时间范围查询 Observation（可选 subject / metric）
-    pub async fn list_by_time_range(
-        &self,
-        input: ListObservationByTimeRange,
-        pagination: Option<PaginationInput>,
-    ) -> Result<PaginatedResponse<Observation>> {
+        key: ObservationQueryKey,
+        range: Range<PrimitiveDateTime>,
+    ) -> Result<Vec<ObservationPoint>> {
         let mut condition = Condition::all()
-            .add(observation::Column::ObservedAt.gte(input.start))
-            .add(observation::Column::ObservedAt.lte(input.end));
+            .add(observation::Column::SubjectId.eq(key.subject_id.0))
+            .add(observation::Column::MetricId.eq(key.metric_id.0));
 
-        if let Some(subject_id) = input.subject_id {
-            condition = condition.add(observation::Column::SubjectId.eq(subject_id.0));
+        if let Some(from) = range.from {
+            condition = condition.add(observation::Column::ObservedAt.gte(from));
         }
-        if let Some(metric_id) = input.metric_id {
-            condition = condition.add(observation::Column::MetricId.eq(metric_id.0));
+        if let Some(to) = range.to {
+            condition = condition.add(observation::Column::ObservedAt.lte(to));
         }
 
-        let order_by = OrderBy::desc(observation::Column::ObservedAt);
-        let params = pagination.unwrap_or_default().to_params();
+        let order_by = OrderBy::asc(observation::Column::ObservedAt);
 
-        let response = self
+        let observations = self
             .repo
-            .find_paginated(Some(condition), &params, Some(&order_by))
+            .find_with_filter_and_order(condition, &order_by)
             .await?;
-        Ok(response.map(Self::from_model))
+
+        Ok(observations
+            .into_iter()
+            .map(|obs| ObservationPoint {
+                value: obs.value.into(),
+                observed_at: obs.observed_at,
+            })
+            .collect())
     }
 
     fn now_primitive() -> PrimitiveDateTime {
@@ -142,3 +111,59 @@ impl ObservationService {
         }
     }
 }
+
+// impl ObservationService {
+//     /// 业务 JOIN 查询：Observation + Metric 定义
+//     pub async fn query_with_metric(
+//         &self,
+//         subject_id: SubjectId,
+//         metric_id: Option<MetricId>,
+//         from: Option<PrimitiveDateTime>,
+//         to: Option<PrimitiveDateTime>,
+//         pagination: PaginationParams,
+//     ) -> Result<PaginatedResponse<ObservationWithMetric>> {
+//         // 1. 构造基础 Condition（只放“必须存在”的条件）
+//         let condition = Condition::all().add(observation::Column::SubjectId.eq(subject_id.0));
+
+//         // 2. 构造查询结构（只关心 JOIN / SELECT）
+//         let base_query = ObservationEntity::find()
+//             .join(JoinType::InnerJoin, observation::Relation::Metric.def())
+//             .apply_condition(Some(condition))
+//             // 可选条件
+//             .apply_optional_eq(observation::Column::MetricId, metric_id.map(|v| v.0))
+//             // 时间范围
+//             .apply_time_range(observation::Column::ObservedAt, from, to);
+
+//         // 3. 查询分页数据
+//         let list = base_query
+//             .clone()
+//             .select_only()
+//             // observation
+//             .column_as(observation::Column::ObservationId, "observation_id")
+//             .column_as(observation::Column::SubjectId, "subject_id")
+//             .column_as(observation::Column::Value, "value")
+//             .column_as(observation::Column::ObservedAt, "observed_at")
+//             .column_as(observation::Column::SourceId, "source_id")
+//             // metric
+//             .column_as(metric::Column::MetricId, "metric_id")
+//             .column_as(metric::Column::MetricCode, "metric_code")
+//             .column_as(metric::Column::MetricName, "metric_name")
+//             .column_as(metric::Column::Unit, "metric_unit")
+//             .column_as(metric::Column::ValueType, "metric_value_type")
+//             .column_as(metric::Column::Status, "metric_status")
+//             .column_as(metric::Column::CreatedAt, "metric_created_at")
+//             .pagination(&pagination)
+//             .into_model::<ObservationWithMetricRow>()
+//             .all(self.repo.db())
+//             .await?;
+
+//         // 4. 查询总数
+//         let total = base_query.total_count(self.repo.db()).await;
+
+//         Ok(PaginatedResponse::new(
+//             list.into_iter().map(ObservationWithMetric::from).collect(),
+//             &pagination,
+//             total,
+//         ))
+//     }
+// }

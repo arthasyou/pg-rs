@@ -69,6 +69,16 @@ where
         Ok(self.select_all(query).await?)
     }
 
+    /// Find entities with filter and order
+    async fn find_with_filter_and_order(
+        &self,
+        filter: Condition,
+        ob: &OrderBy<E>,
+    ) -> Result<Vec<M>> {
+        let query = self.query_filtered(filter).apply_order(ob);
+        self.select_all(query).await
+    }
+
     /// Find entities with pagination
     async fn find_paginated(
         &self,

@@ -17,6 +17,21 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::metric::Entity",
+        from = "Column::MetricId",
+        to = "super::metric::Column::MetricId",
+        on_update = "Cascade",
+        on_delete = "Restrict"
+    )]
+    Metric,
+}
+
+impl Related<super::metric::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Metric.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

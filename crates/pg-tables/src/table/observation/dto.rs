@@ -48,25 +48,16 @@ pub struct RecordObservation {
     pub source_id: Option<DataSourceId>,
 }
 
-/// 按 Subject 查询 Observation 的输入参数
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ListObservationBySubject {
+pub struct ObservationQueryKey {
     pub subject_id: SubjectId,
-}
-
-/// 按 Metric 查询 Observation 的输入参数
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ListObservationByMetric {
     pub metric_id: MetricId,
 }
 
-/// 按时间范围查询 Observation 的输入参数
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ListObservationByTimeRange {
-    pub start: PrimitiveDateTime,
-    pub end: PrimitiveDateTime,
-    pub subject_id: Option<SubjectId>,
-    pub metric_id: Option<MetricId>,
+pub struct ObservationPoint {
+    pub value: ObservationValue,
+    pub observed_at: PrimitiveDateTime,
 }
 
 /// Observation 的强类型 ID
@@ -81,3 +72,33 @@ pub struct ObservationId(pub i64);
 /// - 解析/校验放在 service / business 层
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservationValue(pub String);
+
+impl From<String> for ObservationValue {
+    fn from(value: String) -> Self {
+        ObservationValue(value)
+    }
+}
+
+impl From<&str> for ObservationValue {
+    fn from(value: &str) -> Self {
+        ObservationValue(value.to_string())
+    }
+}
+
+impl From<i64> for ObservationValue {
+    fn from(value: i64) -> Self {
+        ObservationValue(value.to_string())
+    }
+}
+
+impl From<f64> for ObservationValue {
+    fn from(value: f64) -> Self {
+        ObservationValue(value.to_string())
+    }
+}
+
+impl From<bool> for ObservationValue {
+    fn from(value: bool) -> Self {
+        ObservationValue(value.to_string())
+    }
+}

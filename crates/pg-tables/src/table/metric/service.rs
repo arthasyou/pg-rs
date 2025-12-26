@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use pg_core::{OrderBy, PaginatedResponse, PgError, impl_repository};
+use pg_core::{DbContext, OrderBy, PaginatedResponse, PgError, impl_repository};
 use sea_orm::{prelude::*, *};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
@@ -28,9 +26,9 @@ pub struct MetricService {
 
 impl MetricService {
     /// 创建 service
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
+    pub fn new(ctx: DbContext) -> Self {
         Self {
-            repo: MetricRepo::new(db),
+            repo: MetricRepo::new(ctx.clone()),
         }
     }
 

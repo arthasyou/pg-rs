@@ -22,3 +22,9 @@ impl PaginationInput {
         PaginationParams::new(self.page, self.limit).validate()
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Range<T> {
+    pub from: Option<T>,
+    pub to: Option<T>,
+}
