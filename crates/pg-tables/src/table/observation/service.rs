@@ -1,4 +1,4 @@
-use pg_core::{DbContext, OrderBy, PaginatedResponse, impl_repository};
+use pg_core::{DbContext, OrderBy, impl_repository};
 use sea_orm::{prelude::*, *};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
@@ -7,7 +7,7 @@ use crate::{
     entity::{observation, prelude::Observation as ObservationEntity},
     table::{
         data_source::dto::DataSourceId,
-        dto::{PaginationInput, Range},
+        dto::Range,
         metric::dto::MetricId,
         observation::dto::{
             Observation, ObservationId, ObservationPoint, ObservationQueryKey, ObservationValue,

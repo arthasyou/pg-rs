@@ -12,7 +12,7 @@ use pg_tables::{
 };
 
 use crate::{
-    dto::{ObservationList, ObservationView, QueryObservationsRequest, RecordObservationRequest},
+    dto::RecordObservationRequest,
     error::{DemoDbError, Result},
 };
 
