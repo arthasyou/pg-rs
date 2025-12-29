@@ -15,9 +15,14 @@ sea-orm = { version = "2.0.0-rc", features = ["sqlx-postgres", "runtime-tokio-ru
 tokio = { version = "1", features = ["full"] }
 thiserror = "2.0"
 tracing = "0.1.44"
-tracing-subscriber = "0.3.22"
+tracing-subscriber = { version = "0.3.22", features = [
+    "env-filter",
+    "fmt",
+    "time",
+] }
+tracing-appender = "0.2.4"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.147"
+serde_json = "1.0.148"
 dotenvy = "0.15"
 validator = { version = "0.20", features = ["derive"] }
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing"] }
@@ -26,6 +31,7 @@ async-trait = "0.1"
 # individual crates
 pg-core = { path = "crates/pg-core" }
 pg-tables = { path = "crates/pg-tables" }
+demo-db = { path = "crates/demo-db" }
 
 # Root package for examples
 # [package]

@@ -1,0 +1,29 @@
+[package]
+name = "web-server"
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+# internal dependencies
+demo-db.workspace = true
+
+# external dependencies
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+validator.workspace = true
+thiserror.workspace = true
+time.workspace = true
+axum = {version = "0.8.8", features = ["macros"]}
+utoipa = { version = "5", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+utoipa-axum = { version = "0.2" }
+toolcraft-axum-kit = {version = "0.2.3"}
+toolcraft-config= {version = "0.2.0"}
+toolcraft-jwt= {version = "0.2.0"}
+toolcraft-utils= {version = "0.2.2"}
+
+
