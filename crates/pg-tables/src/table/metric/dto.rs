@@ -35,6 +35,15 @@ pub struct Metric {
     pub created_at: PrimitiveDateTime,
 }
 
+/// Metric 的视图表示
+#[derive(Debug, Clone)]
+pub struct MetricView {
+    pub id: MetricId,
+    pub code: MetricCode,
+    pub name: String,
+    pub unit: Option<String>,
+}
+
 /// 创建 Metric 的输入参数
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateMetric {

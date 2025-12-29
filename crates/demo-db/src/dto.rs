@@ -6,8 +6,9 @@
 //! - 不引入额外抽象
 
 use pg_tables::table::{
-    metric::dto::{MetricCode, MetricId, MetricValueType},
-    observation::dto::ObservationValue,
+    metric::dto::{MetricId, MetricView},
+    observation::dto::{ObservationPoint, ObservationValue},
+    subject::dto::SubjectId,
 };
 use time::PrimitiveDateTime;
 
@@ -17,11 +18,11 @@ use time::PrimitiveDateTime;
 
 /// 记录一次健康观测（跨表业务行为）
 pub struct RecordObservationRequest {
-    pub subject_id: i64,
-    pub metric_id: i64,
+    pub subject_id: SubjectId,
+    pub metric_id: MetricId,
 
     /// 业务层只关心“数值是什么”
-    pub value: f64,
+    pub value: ObservationValue,
 
     /// 观测发生的时间
     pub observed_at: PrimitiveDateTime,
@@ -31,12 +32,9 @@ pub struct RecordObservationRequest {
 }
 
 /// 查询观测数据
-pub struct QueryObservationsRequest {
-    pub subject_id: i64,
-    pub metric_id: Option<i64>,
-
-    pub from: Option<PrimitiveDateTime>,
-    pub to: Option<PrimitiveDateTime>,
+pub struct QueryObservationSeries {
+    pub subject_id: SubjectId,
+    pub metric_id: MetricId,
 }
 
 /// =========================
@@ -44,23 +42,8 @@ pub struct QueryObservationsRequest {
 /// =========================
 
 /// 业务视角的单条观测结果
-pub struct ObservationView {
+#[derive(Debug, Clone)]
+pub struct QueryObservationResponse {
     pub metric: MetricView,
-    pub value: ObservationValue,
-    pub observed_at: PrimitiveDateTime,
-    pub source: Option<String>,
-}
-
-pub struct MetricView {
-    pub id: MetricId,
-    pub code: MetricCode,
-    pub name: String,
-    pub unit: Option<String>,
-    pub value_type: MetricValueType,
-}
-
-/// 观测结果列表
-pub struct ObservationList {
-    pub subject_id: i64,
-    pub items: Vec<ObservationView>,
+    pub points: Vec<ObservationPoint>,
 }
