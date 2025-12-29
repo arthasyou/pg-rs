@@ -1,3 +1,4 @@
+use pg_core::DatabaseConfig;
 use serde::Deserialize;
 use toolcraft_config::load_settings;
 use toolcraft_jwt::JwtCfg;
@@ -8,6 +9,7 @@ use crate::error::Result;
 pub struct Settings {
     pub http: HttpCfg,
     pub jwt: JwtCfg,
+    pub db: Vec<DatabaseConfig>,
 }
 
 #[derive(Debug, Deserialize)]

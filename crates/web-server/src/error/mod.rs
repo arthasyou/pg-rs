@@ -21,6 +21,9 @@ pub enum Error {
 
     #[error("not found: {0}")]
     NotFound(String),
+
+    #[error("custom error: {0}")]
+    Custom(String),
 }
 
 impl IntoResponse for Error {
@@ -29,6 +32,7 @@ impl IntoResponse for Error {
             Error::ConfigError(ref e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             Error::ValidationError(ref e) => (StatusCode::BAD_REQUEST, e.to_string()),
             Error::NotFound(ref e) => (StatusCode::NOT_FOUND, e.to_string()),
+            Error::Custom(ref e) => (StatusCode::NOT_FOUND, e.to_string()),
         };
 
         let body = Json(json!({

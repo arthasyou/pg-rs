@@ -5,6 +5,7 @@ version.workspace = true
 
 [dependencies]
 # internal dependencies
+pg-core.workspace = true
 demo-db.workspace = true
 
 # external dependencies
