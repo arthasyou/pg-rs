@@ -1,2 +1,2 @@
-pub mod example;
+pub mod base;
 pub mod medical;

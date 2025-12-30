@@ -10,7 +10,7 @@ use axum::{
 use toolcraft_axum_kit::{CommonError, CommonResponse, IntoCommonResponse, ResponseResult};
 use utoipa;
 
-use crate::models::example::{CreateItemRequest, ItemResponse, MessageResponse};
+use crate::dto::example::{CreateItemRequest, ItemResponse, MessageResponse};
 
 // 简单的内存存储，实际项目中应该使用数据库
 pub type ItemStore = Arc<Mutex<HashMap<u64, ItemResponse>>>;

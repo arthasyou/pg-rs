@@ -8,8 +8,8 @@ use toolcraft_axum_kit::{CommonError, CommonResponse};
 use utoipa::OpenApi;
 
 use crate::{
+    dto::example::{CreateItemRequest, ItemResponse, MessageResponse},
     handlers::example::{ItemStore, create_item, delete_item, get_item, health_check, list_items},
-    models::example::{CreateItemRequest, ItemResponse, MessageResponse},
 };
 
 #[derive(OpenApi)]

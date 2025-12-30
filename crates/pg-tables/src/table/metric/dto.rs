@@ -2,6 +2,8 @@ use core::fmt;
 
 use time::PrimitiveDateTime;
 
+use crate::table::observation::dto::ObservationValue;
+
 /// Metric 表示：
 /// 一个“可被观测的指标定义”
 ///
@@ -35,13 +37,20 @@ pub struct Metric {
     pub created_at: PrimitiveDateTime,
 }
 
-/// Metric 的视图表示
-#[derive(Debug, Clone)]
-pub struct MetricView {
-    pub id: MetricId,
-    pub code: MetricCode,
-    pub name: String,
-    pub unit: Option<String>,
+impl Metric {
+    /// 尝试将 observation 的值投影为“可比较的数轴值”
+    ///
+    /// 返回 Some(f64)：可用于排序 / 画图
+    /// 返回 None：该指标不进入数值轴（如 Boolean / Text）
+    pub fn try_parse_numeric(&self, value: &ObservationValue) -> Option<f64> {
+        match self.value_type {
+            MetricValueType::Integer => value.try_parse_f64(),
+            MetricValueType::Float => value.try_parse_f64(),
+            MetricValueType::Decimal => value.try_parse_f64(),
+            MetricValueType::Boolean => None,
+            MetricValueType::Text => None,
+        }
+    }
 }
 
 /// 创建 Metric 的输入参数
@@ -82,6 +91,11 @@ impl From<MetricId> for i64 {
 /// 是为了在 domain 中避免“裸字符串”横飞
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MetricCode(pub String);
+impl AsRef<str> for MetricCode {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
 
 /// 指标值的类型定义
 ///

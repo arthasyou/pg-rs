@@ -73,6 +73,20 @@ pub struct ObservationId(pub i64);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservationValue(pub String);
 
+impl ObservationValue {
+    /// 返回内部字符串（零拷贝）
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// 尝试将值解析为 f64
+    ///
+    /// 这是一个“语法级工具函数”，不代表业务语义
+    pub fn try_parse_f64(&self) -> Option<f64> {
+        self.0.trim().parse::<f64>().ok()
+    }
+}
+
 impl From<String> for ObservationValue {
     fn from(value: String) -> Self {
         ObservationValue(value)

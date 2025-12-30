@@ -9,7 +9,6 @@ use crate::{
         dto::PaginationInput,
         metric::dto::{
             CreateMetric, ListMetric, Metric, MetricCode, MetricId, MetricStatus, MetricValueType,
-            MetricView,
         },
     },
 };
@@ -58,12 +57,6 @@ impl MetricService {
         Ok(Self::from_model(model))
     }
 
-    /// 根据 ID 获取 Metric 视图
-    pub async fn get_view(&self, id: MetricId) -> Result<Option<MetricView>> {
-        let model = self.repo.find_by_id(id.0).await?;
-        Ok(model.map(Self::to_view))
-    }
-
     /// 根据 ID 获取 Metric
     pub async fn get(&self, id: MetricId) -> Result<Option<Metric>> {
         let model = self.repo.find_by_id(id.0).await?;
@@ -80,19 +73,6 @@ impl MetricService {
             )
             .await?;
         Ok(model.map(Self::from_model))
-    }
-
-    /// 根据 code 获取 Metric 视图s
-    pub async fn get_view_by_code(&self, code: &MetricCode) -> Result<Option<MetricView>> {
-        let model = self
-            .repo
-            .select_one(
-                self.repo
-                    .query_filtered(Condition::all().add(metric::Column::MetricCode.eq(&code.0))),
-            )
-            .await?;
-
-        Ok(model.map(Self::to_view))
     }
 
     /// 判断 Metric 是否存在
@@ -162,15 +142,6 @@ impl MetricService {
     /// ===============================
     /// 内部映射
     /// ===============================
-
-    fn to_view(model: metric::Model) -> MetricView {
-        MetricView {
-            id: MetricId(model.metric_id),
-            code: MetricCode(model.metric_code),
-            name: model.metric_name,
-            unit: model.unit,
-        }
-    }
 
     fn from_model(model: metric::Model) -> Metric {
         Metric {

@@ -2,7 +2,6 @@ use pg_tables::{
     pg_core::DbContext,
     table::{
         data_source::dto::DataSourceId,
-        dto::Range,
         metric::service::MetricService,
         observation::{
             dto::{ObservationQueryKey, RecordObservation},
@@ -14,7 +13,10 @@ use pg_tables::{
 use time::PrimitiveDateTime;
 
 use crate::{
-    dto::{QueryObservationResponse, QueryObservationSeries, RecordObservationRequest},
+    dto::{
+        base::Range,
+        medical::{ObservationQueryResult, QueryObservationSeries, RecordObservationRequest},
+    },
     error::{DemoDbError, Result},
 };
 
@@ -78,10 +80,10 @@ impl HealthApi {
         &self,
         query: QueryObservationSeries,
         range: Range<PrimitiveDateTime>,
-    ) -> Result<QueryObservationResponse> {
+    ) -> Result<ObservationQueryResult> {
         let metric = self
             .metric
-            .get_view(query.metric_id.into())
+            .get(query.metric_id.into())
             .await
             .map_err(|_| DemoDbError::NotFound("metric"))?
             .ok_or(DemoDbError::NotFound("metric"))?;
@@ -93,10 +95,10 @@ impl HealthApi {
 
         let points = self
             .observation
-            .query_observation(key, range)
+            .query_observation(key, range.into())
             .await
             .map_err(|_| DemoDbError::NotFound("metric"))?;
 
-        Ok(QueryObservationResponse { metric, points })
+        Ok(ObservationQueryResult { metric, points })
     }
 }

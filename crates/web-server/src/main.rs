@@ -1,7 +1,7 @@
+mod dto;
 mod error;
 mod handlers;
 mod logging;
-mod models;
 mod routes;
 mod settings;
 mod statics;

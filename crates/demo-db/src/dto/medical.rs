@@ -6,7 +6,7 @@
 //! - 不引入额外抽象
 
 use pg_tables::table::{
-    metric::dto::{MetricId, MetricView},
+    metric::dto::{Metric, MetricId},
     observation::dto::{ObservationPoint, ObservationValue},
     subject::dto::SubjectId,
 };
@@ -43,7 +43,7 @@ pub struct QueryObservationSeries {
 
 /// 业务视角的单条观测结果
 #[derive(Debug, Clone)]
-pub struct QueryObservationResponse {
-    pub metric: MetricView,
+pub struct ObservationQueryResult {
+    pub metric: Metric,
     pub points: Vec<ObservationPoint>,
 }
