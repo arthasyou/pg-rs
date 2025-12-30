@@ -15,8 +15,8 @@ use crate::{
 
 #[utoipa::path(
     get,
-    path = "/health/observations",
-    tag = "Health",
+    path = "/observations",
+    tag = "Medical",
     params(
         QueryObservationRequest
     ),

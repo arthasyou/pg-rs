@@ -17,20 +17,27 @@ pub struct QueryObservationRequest {
     pub metric_id: i64,
 
     /// 查询起始时间（RFC 3339）
-    pub start_at: String,
+    pub start_at: Option<String>,
 
     /// 查询结束时间（RFC 3339）
-    pub end_at: String,
+    pub end_at: Option<String>,
 }
 
 impl QueryObservationRequest {
     pub fn to_internal(self) -> Result<(QueryObservationSeries, Range<PrimitiveDateTime>)> {
         use time::{OffsetDateTime, PrimitiveDateTime, format_description::well_known::Rfc3339};
 
-        let start = OffsetDateTime::parse(&self.start_at, &Rfc3339)
-            .map_err(|_| Error::Custom("invalid start_at format".into()))?;
-        let end = OffsetDateTime::parse(&self.end_at, &Rfc3339)
-            .map_err(|_| Error::Custom("invalid end_at format".into()))?;
+        let start = match self.start_at {
+            Some(ref s) => OffsetDateTime::parse(s, &Rfc3339)
+                .map_err(|_| Error::Custom("invalid start_at format".into()))?,
+            None => OffsetDateTime::from_unix_timestamp(0).unwrap(),
+        };
+
+        let end = match self.end_at {
+            Some(ref s) => OffsetDateTime::parse(s, &Rfc3339)
+                .map_err(|_| Error::Custom("invalid end_at format".into()))?,
+            None => OffsetDateTime::now_utc(),
+        };
 
         let range = Range {
             from: Some(PrimitiveDateTime::new(start.date(), start.time())),

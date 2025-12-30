@@ -1,4 +1,5 @@
 mod example;
+mod medical;
 
 use std::sync::Arc;
 
@@ -11,12 +12,13 @@ use utoipa::{
 };
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::routes::example::ExampleApi;
+use crate::routes::{example::ExampleApi, medical::MedicalApi};
 
 #[derive(OpenApi)]
 #[openapi(
         nest(
             (path = "/example", api = ExampleApi),
+            (path = "/medical", api = MedicalApi),
         ),
     )]
 struct ApiDoc;
@@ -38,7 +40,9 @@ pub fn create_routes(jwt: Arc<Jwt>) -> Router {
 
     Router::new()
         .nest("/example", example::example_routes())
+        // .nest("/medical", medical::medical_routes())
         .route_layer(from_fn(auth))
+        .nest("/medical", medical::medical_routes())
         .layer(Extension(jwt))
         .layer(cors)
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", doc))
