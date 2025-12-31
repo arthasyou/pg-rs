@@ -1,12 +1,20 @@
-use demo_db::dto::{
-    base::Range,
-    medical::{ObservationQueryResult, QueryObservationSeries},
+use demo_db::{
+    dto::{
+        base::Range,
+        medical::{ObservationQueryResult, QueryObservationSeries},
+    },
+    CreateDataSource, DataSourceKind, MetricId, ObservationValue, SubjectId,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use time::{OffsetDateTime, PrimitiveDateTime};
 use utoipa::{IntoParams, PartialSchema, ToSchema};
 
 use crate::error::{Error, Result};
+
+// =========================
+// Query Observation
+// =========================
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct QueryObservationRequest {
@@ -100,4 +108,70 @@ pub struct ObservationPointDto {
     pub value_num: Option<f64>,
     #[schema(schema_with = String::schema)]
     pub observed_at: OffsetDateTime,
+}
+
+// =========================
+// Record Observation
+// =========================
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct RecordObservationRequest {
+    /// subject 全局 ID
+    pub subject_id: i64,
+
+    /// metric 全局 ID
+    pub metric_id: i64,
+
+    /// 观测值
+    pub value: String,
+
+    /// 观测发生的时间（RFC 3339）
+    pub observed_at: String,
+
+    /// 数据来源信息
+    pub source: SourceInput,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct SourceInput {
+    /// 来源类型：device / manual / import / system
+    pub kind: String,
+
+    /// 来源名称
+    pub name: String,
+
+    /// 可选元数据
+    pub metadata: Option<JsonValue>,
+}
+
+impl RecordObservationRequest {
+    pub fn to_internal(
+        self,
+    ) -> Result<(SubjectId, MetricId, ObservationValue, PrimitiveDateTime, CreateDataSource)> {
+        use time::format_description::well_known::Rfc3339;
+
+        let observed_at = OffsetDateTime::parse(&self.observed_at, &Rfc3339)
+            .map_err(|_| Error::Custom("invalid observed_at format".into()))?;
+        let observed_at = PrimitiveDateTime::new(observed_at.date(), observed_at.time());
+
+        let source = CreateDataSource {
+            kind: DataSourceKind::from(self.source.kind.as_str()),
+            name: self.source.name,
+            metadata: self.source.metadata,
+        };
+
+        Ok((
+            SubjectId(self.subject_id),
+            MetricId(self.metric_id),
+            ObservationValue(self.value),
+            observed_at,
+            source,
+        ))
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct RecordObservationResponse {
+    pub observation_id: i64,
+    pub source_id: i64,
 }

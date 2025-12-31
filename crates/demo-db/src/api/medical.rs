@@ -1,7 +1,7 @@
 use pg_tables::{
     pg_core::DbContext,
     table::{
-        data_source::dto::DataSourceId,
+        data_source::{dto::DataSourceId, service::DataSourceService},
         metric::service::MetricService,
         observation::{
             dto::{ObservationQueryKey, RecordObservation},
@@ -16,7 +16,10 @@ use crate::{
     Error, Result,
     dto::{
         base::Range,
-        medical::{ObservationQueryResult, QueryObservationSeries, RecordObservationRequest},
+        medical::{
+            ObservationQueryResult, QueryObservationSeries, RecordObservationRequest,
+            RecordObservationWithSourceRequest, RecordObservationResult,
+        },
     },
 };
 
@@ -24,6 +27,7 @@ pub struct HealthApi {
     subject: SubjectService,
     metric: MetricService,
     observation: ObservationService,
+    data_source: DataSourceService,
 }
 
 impl HealthApi {
@@ -31,7 +35,8 @@ impl HealthApi {
         Self {
             subject: SubjectService::new(db.clone()),
             metric: MetricService::new(db.clone()),
-            observation: ObservationService::new(db),
+            observation: ObservationService::new(db.clone()),
+            data_source: DataSourceService::new(db),
         }
     }
 }
@@ -64,6 +69,45 @@ impl HealthApi {
         self.observation.record(input).await?;
 
         Ok(())
+    }
+
+    /// 记录观测数据（带 source 创建）
+    /// 1. 先创建 data_source
+    /// 2. 再插入 observation
+    pub async fn record_observation_with_source(
+        &self,
+        req: RecordObservationWithSourceRequest,
+    ) -> Result<RecordObservationResult> {
+        // 1. subject 必须存在
+        self.subject
+            .exists(req.subject_id)
+            .await?
+            .then(|| ())
+            .ok_or_else(|| Error::not_found("subject", req.subject_id.0))?;
+
+        // 2. metric 必须存在
+        self.metric
+            .get(req.metric_id)
+            .await?
+            .ok_or_else(|| Error::not_found("metric", req.metric_id.0))?;
+
+        // 3. 创建 data_source
+        let data_source = self.data_source.create(req.source).await?;
+
+        // 4. 插入 observation
+        let input = RecordObservation {
+            subject_id: req.subject_id,
+            metric_id: req.metric_id,
+            value: req.value,
+            observed_at: req.observed_at,
+            source_id: Some(data_source.id),
+        };
+        let observation = self.observation.record(input).await?;
+
+        Ok(RecordObservationResult {
+            observation_id: observation.id,
+            source_id: data_source.id,
+        })
     }
 
     pub async fn query_observation(
