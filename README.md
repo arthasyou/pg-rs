@@ -27,7 +27,7 @@ make migrate-up
 
 Open Claude Code / Cursor / Codex and paste:
 
-```
+```text
 Please read ai_protocols/TABLE_ADDING_PROTOCOL.md first to understand the project architecture.
 
 Then help me implement:
@@ -45,7 +45,7 @@ cargo run -p web-server
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────┐
 │                    web-server                        │  Layer 5: HTTP API
 ├──────────────────────────────────────────────────────┤
@@ -61,27 +61,27 @@ cargo run -p web-server
 
 ### Layer Responsibilities
 
-| Layer | Crate | Responsibility | AI Modifiable |
-|-------|-------|----------------|---------------|
-| 5 | web-server | HTTP routes, handlers, request/response DTOs | Yes |
-| 4 | demo-db | Business APIs, orchestrate multiple services | Yes |
-| 3 | pg-tables | Single-table services, DTOs, entities | Yes |
-| 2 | pg-core | Connection pool, error handling, repository traits | **No** |
-| 1 | migration | Database schema | Yes |
+| Layer | Crate      | Responsibility                                     | AI Modifiable |
+| ----- | ---------- | -------------------------------------------------- | ------------- |
+| 5     | web-server | HTTP routes, handlers, request/response DTOs       | Yes           |
+| 4     | demo-db    | Business APIs, orchestrate multiple services       | Yes           |
+| 3     | pg-tables  | Single-table services, DTOs, entities              | Yes           |
+| 2     | pg-core    | Connection pool, error handling, repository traits | **No**        |
+| 1     | migration  | Database schema                                    | Yes           |
 
 ## AI Development Documentation
 
-| File | Purpose |
-|------|---------|
+| File                                    | Purpose                           |
+| --------------------------------------- | --------------------------------- |
 | `ai_protocols/TABLE_ADDING_PROTOCOL.md` | AI execution protocol (must read) |
-| `how_to_use_ai.md` | Prompt templates (copy & paste) |
-| `README_CN.md` | Chinese documentation |
+| `how_to_use_ai.md`                      | Prompt templates (copy & paste)   |
+| `README_CN.md`                          | Chinese documentation             |
 
 ## Data Model
 
 Health observation system using star schema:
 
-```
+```text
 ┌──────────┐     ┌─────────────┐     ┌────────────┐
 │ subject  │────▶│ observation │◀────│   metric   │
 └──────────┘     └─────────────┘     └────────────┘
@@ -99,18 +99,18 @@ Health observation system using star schema:
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/medical/observations` | Query observations by subject and metric |
-| POST | `/medical/observations` | Record observation with source |
+| Method | Endpoint                | Description                              |
+| ------ | ----------------------- | ---------------------------------------- |
+| GET    | `/medical/observations` | Query observations by subject and metric |
+| POST   | `/medical/observations` | Record observation with source           |
 
-Swagger UI: http://localhost:19878/swagger-ui
+Swagger UI: <http://localhost:19878/swagger-ui>
 
 ## Example: Let AI Add a New Feature
 
 Copy to Claude Code:
 
-```
+```text
 Please follow ai_protocols/TABLE_ADDING_PROTOCOL.md strictly.
 
 Implement complete feature:
@@ -155,14 +155,14 @@ make test              # Run tests
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Runtime | Tokio |
-| ORM | SeaORM 2.0 |
-| Web Framework | Axum 0.8 |
-| OpenAPI | utoipa + Swagger UI |
-| Serialization | serde |
-| Logging | tracing |
+| Component     | Technology          |
+| ------------- | ------------------- |
+| Runtime       | Tokio               |
+| ORM           | SeaORM 2.0          |
+| Web Framework | Axum 0.8            |
+| OpenAPI       | utoipa + Swagger UI |
+| Serialization | serde               |
+| Logging       | tracing             |
 
 ## Why AI-Driven Development?
 
