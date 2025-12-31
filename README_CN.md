@@ -27,7 +27,7 @@ make migrate-up
 
 打开 Claude Code / Cursor / Codex，复制以下内容：
 
-```
+```text
 请先阅读 ai_protocols/TABLE_ADDING_PROTOCOL.md 了解项目架构规范。
 
 然后帮我实现以下功能：
@@ -45,7 +45,8 @@ cargo run -p web-server
 
 ## 架构概览
 
-```
+```text
+
 ┌──────────────────────────────────────────────────────┐
 │                    web-server                        │  Layer 5: HTTP API
 ├──────────────────────────────────────────────────────┤
@@ -61,21 +62,21 @@ cargo run -p web-server
 
 ### 层级职责
 
-| 层级 | Crate | 职责 | AI 可修改 |
-|------|-------|------|----------|
-| 5 | web-server | HTTP 路由、Handler、请求/响应 DTO | 可以 |
-| 4 | demo-db | 业务 API，编排多个 Service | 可以 |
-| 3 | pg-tables | 单表 Service、DTO、Entity | 可以 |
-| 2 | pg-core | 连接池、错误处理、Repository trait | 禁止 |
-| 1 | migration | 数据库表结构 | 可以 |
+| 层级 | Crate      | 职责                               | AI 可修改 |
+| ---- | ---------- | ---------------------------------- | --------- |
+| 5    | web-server | HTTP 路由、Handler、请求/响应 DTO  | 可以      |
+| 4    | demo-db    | 业务 API，编排多个 Service         | 可以      |
+| 3    | pg-tables  | 单表 Service、DTO、Entity          | 可以      |
+| 2    | pg-core    | 连接池、错误处理、Repository trait | 禁止      |
+| 1    | migration  | 数据库表结构                       | 可以      |
 
 ## AI 开发文档
 
-| 文件 | 用途 |
-|------|------|
-| `ai_protocols/TABLE_ADDING_PROTOCOL.md` | AI 执行规约（必读） |
-| `how_to_use_ai.md` | 提示词模板（复制即用） |
-| `PROJECT_DESIGN_EVALUATION.md` | 项目设计评审 |
+| 文件                                    | 用途                   |
+| --------------------------------------- | ---------------------- |
+| `ai_protocols/TABLE_ADDING_PROTOCOL.md` | AI 执行规约（必读）    |
+| `how_to_use_ai.md`                      | 提示词模板（复制即用） |
+| `PROJECT_DESIGN_EVALUATION.md`          | 项目设计评审           |
 
 ## 示例：让 AI 添加新功能
 
@@ -83,7 +84,7 @@ cargo run -p web-server
 
 复制以下内容给 Claude Code：
 
-```
+```text
 请严格按照 ai_protocols/TABLE_ADDING_PROTOCOL.md 执行。
 
 需要实现完整功能：
@@ -116,6 +117,7 @@ cargo run -p web-server
 ```
 
 AI 会自动：
+
 1. 创建 migration 文件
 2. 在 pg-tables 中生成 DTO 和 Service
 3. 在 demo-db 中创建业务 API
@@ -125,7 +127,7 @@ AI 会自动：
 
 当前示例是健康数据管理系统：
 
-```
+```text
 ┌──────────┐     ┌─────────────┐     ┌────────────┐
 │ subject  │────▶│ observation │◀────│   metric   │
 └──────────┘     └─────────────┘     └────────────┘
@@ -143,12 +145,12 @@ AI 会自动：
 
 ## API 接口
 
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| GET | `/medical/observations` | 查询观测数据 |
+| 方法 | 路径                    | 描述                   |
+| ---- | ----------------------- | ---------------------- |
+| GET  | `/medical/observations` | 查询观测数据           |
 | POST | `/medical/observations` | 记录观测数据（含来源） |
 
-Swagger UI: http://localhost:19878/swagger-ui
+Swagger UI: <http://localhost:19878/swagger-ui>
 
 ## 开发命令
 
@@ -163,14 +165,14 @@ make test              # 运行测试
 
 ## 技术栈
 
-| 组件 | 技术 |
-|------|------|
-| 运行时 | Tokio |
-| ORM | SeaORM 2.0 |
-| Web 框架 | Axum 0.8 |
-| OpenAPI | utoipa + Swagger UI |
-| 序列化 | serde |
-| 日志 | tracing |
+| 组件     | 技术                |
+| -------- | ------------------- |
+| 运行时   | Tokio               |
+| ORM      | SeaORM 2.0          |
+| Web 框架 | Axum 0.8            |
+| OpenAPI  | utoipa + Swagger UI |
+| 序列化   | serde               |
+| 日志     | tracing             |
 
 ## 为什么选择 AI 驱动开发？
 
