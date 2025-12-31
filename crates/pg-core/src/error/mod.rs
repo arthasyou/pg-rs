@@ -6,9 +6,11 @@ pub mod validation;
 use sea_orm::DbErr;
 use thiserror::Error;
 
+use crate::error::{business::BusinessError, entity::EntityError};
+
 /// Core error enum that encompasses all error types
 #[derive(Error, Debug)]
-pub enum PgError {
+pub enum Error {
     /// Database errors
     #[error(transparent)]
     Database(#[from] database::DatabaseError),
@@ -34,8 +36,25 @@ pub enum PgError {
     Business(#[from] business::BusinessError),
 }
 
-impl PgError {
-    // === Database error helpers ===
+pub enum ErrorKind {
+    NotFound,
+    Validation,
+    Permission,
+    Conflict,
+    Database,
+    Internal,
+}
+
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        match self {
+            Error::Entity(EntityError::NotFound { .. }) => ErrorKind::NotFound,
+            Error::Validation(_) => ErrorKind::Validation,
+            Error::Business(BusinessError::PermissionDenied(_)) => ErrorKind::Permission,
+            Error::Database(_) | Error::DatabaseOp(_) => ErrorKind::Database,
+            _ => ErrorKind::Internal,
+        }
+    }
 
     /// Create a database connection error
     pub fn db_connection(message: impl Into<String>) -> Self {
@@ -126,7 +145,7 @@ impl PgError {
 /// Backward compatibility alias
 
 /// Result type alias using PgError
-pub type Result<T> = std::result::Result<T, PgError>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[cfg(test)]
 mod tests {
@@ -134,14 +153,14 @@ mod tests {
 
     #[test]
     fn test_not_found_error() {
-        let err = PgError::not_found("User", 123);
+        let err = Error::not_found("User", 123);
         assert!(err.is_not_found());
         assert_eq!(err.to_string(), "Entity not found: User with id 123");
     }
 
     #[test]
     fn test_already_exists_error() {
-        let err = PgError::already_exists("User", "email", "test@example.com");
+        let err = Error::already_exists("User", "email", "test@example.com");
         assert_eq!(
             err.to_string(),
             "Entity already exists: User with email=test@example.com"
@@ -150,14 +169,14 @@ mod tests {
 
     #[test]
     fn test_validation_error() {
-        let err = PgError::validation("Invalid email format");
+        let err = Error::validation("Invalid email format");
         assert!(err.is_validation());
         assert_eq!(err.to_string(), "Validation error: Invalid email format");
     }
 
     #[test]
     fn test_business_error() {
-        let err = PgError::business("Insufficient balance");
+        let err = Error::business("Insufficient balance");
         assert!(!err.is_validation());
         assert!(!err.is_not_found());
         assert_eq!(err.to_string(), "Business error: Insufficient balance");
@@ -165,13 +184,13 @@ mod tests {
 
     #[test]
     fn test_config_error() {
-        let err = PgError::config("Missing API key");
+        let err = Error::config("Missing API key");
         assert_eq!(err.to_string(), "Configuration error: Missing API key");
     }
 
     #[test]
     fn test_database_error() {
-        let err = PgError::db_connection("Connection timeout");
+        let err = Error::db_connection("Connection timeout");
         assert!(err.is_database());
         assert_eq!(err.to_string(), "Connection error: Connection timeout");
     }

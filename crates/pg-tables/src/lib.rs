@@ -2,13 +2,11 @@
 pub use pg_core;
 // Re-export core utilities from pg-core
 pub use pg_core::{
-    BaseRepository, PaginatedResponse, PaginationParams, PgError as SdkError, Repository, Result,
+    BaseRepository, Error as SdkError, PaginatedResponse, PaginationParams, Repository, Result,
 };
 
 // Entity definitions
 pub mod entity;
-
-pub mod error;
 pub mod table;
 
 #[cfg(test)]

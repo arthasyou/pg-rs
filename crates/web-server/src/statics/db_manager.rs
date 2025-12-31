@@ -25,9 +25,9 @@ pub fn get_default_ctx() -> DbContext {
     get_db_manager().default()
 }
 
-pub fn get_specific_ctx(name: &str) -> Result<DbContext> {
-    let ctx = get_db_manager()
-        .get(name)
-        .map_err(|_| Error::NotFound(format!("database '{name}' not found")))?;
-    Ok(ctx)
-}
+// pub fn get_specific_ctx(name: &str) -> Result<DbContext> {
+//     let ctx = get_db_manager()
+//         .get(name)
+//         .map_err(|_| Error::NotFound(format!("database '{name}' not found")))?;
+//     Ok(ctx)
+// }

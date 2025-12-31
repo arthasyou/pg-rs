@@ -1,4 +1,4 @@
-use pg_core::{DbContext, OrderBy, PaginatedResponse, PgError, impl_repository};
+use pg_core::{DbContext, OrderBy, PaginatedResponse, Error, impl_repository};
 use sea_orm::{prelude::*, *};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
@@ -35,7 +35,7 @@ impl MetricService {
     /// 创建一个新的 Metric
     pub async fn create(&self, input: CreateMetric) -> Result<Metric> {
         if self.exists_by_code(&input.code).await? {
-            return Err(PgError::already_exists(
+            return Err(Error::already_exists(
                 "Metric",
                 "metric_code",
                 input.code.0,

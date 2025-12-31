@@ -1,3 +1,4 @@
 pub mod api;
 pub mod dto;
-pub mod error;
+
+pub use pg_tables::pg_core::{Error, Result};

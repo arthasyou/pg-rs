@@ -3033,9 +3033,9 @@ dependencies = [
 
 [[package]]
 name = "toolcraft-axum-kit"
-version = "0.2.3"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6811bf8d8bcf715302d737195033b084842f611c8127972d261c3ecdf2beeac"
+checksum = "5a1901c430bccf458450d3f55d5d6f80c2fa73e652eaece22a92c228538c7cdb"
 dependencies = [
  "axum",
  "serde",

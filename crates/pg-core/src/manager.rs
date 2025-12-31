@@ -6,7 +6,7 @@ use tracing::{debug, info};
 use crate::{
     DbContext,
     config::DatabaseConfig,
-    error::{PgError, Result},
+    error::{Error, Result},
 };
 
 /// Multi-database connection manager
@@ -18,7 +18,7 @@ impl DatabaseManager {
     /// Create a new DatabaseManager with the given configurations
     pub async fn new(configs: Vec<DatabaseConfig>) -> Result<Self> {
         if configs.is_empty() {
-            return Err(PgError::config(
+            return Err(Error::config(
                 "At least one database configuration is required",
             ));
         }
@@ -36,7 +36,7 @@ impl DatabaseManager {
                 .sqlx_logging(config.sql_logging);
 
             let db = Database::connect(opt).await.map_err(|e| {
-                PgError::internal(format!("Connection failed for {}: {}", config.name, e))
+                Error::internal(format!("Connection failed for {}: {}", config.name, e))
             })?;
 
             let ctx = conn_to_context(db);
@@ -53,7 +53,7 @@ impl DatabaseManager {
         self.connections
             .get(name)
             .cloned()
-            .ok_or_else(|| PgError::not_found("Database", name))
+            .ok_or_else(|| Error::not_found("Database", name))
     }
 
     /// Get the default database connection (first one added)

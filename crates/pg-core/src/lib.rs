@@ -10,7 +10,7 @@ pub mod repository;
 use std::sync::Arc;
 
 pub use config::DatabaseConfig;
-pub use error::{PgError, Result};
+pub use error::{Error, ErrorKind, Result};
 pub use manager::DatabaseManager;
 pub use query::{OrderBy, PaginatedResponse, PaginationParams};
 pub use repository::{Repository, base::BaseRepository};
