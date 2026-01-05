@@ -1,6 +1,6 @@
 use pg_core::{DbContext, OrderBy, PaginatedResponse, impl_repository};
 use sea_orm::{prelude::*, *};
-use time::{OffsetDateTime, PrimitiveDateTime};
+use time::OffsetDateTime;
 
 use crate::{
     Repository, Result,
@@ -34,7 +34,7 @@ impl DataSourceService {
 
     /// 创建一个新的 DataSource
     pub async fn create(&self, input: CreateDataSource) -> Result<DataSource> {
-        let now = Self::now_primitive();
+        let now = Self::now_utc();
 
         let active = data_source::ActiveModel {
             source_type: Set(input.kind.to_string()),
@@ -84,9 +84,8 @@ impl DataSourceService {
         Ok(response.map(Self::from_model))
     }
 
-    fn now_primitive() -> PrimitiveDateTime {
-        let now_offset = OffsetDateTime::now_utc();
-        PrimitiveDateTime::new(now_offset.date(), now_offset.time())
+    fn now_utc() -> OffsetDateTime {
+        OffsetDateTime::now_utc()
     }
 
     /// ===============================

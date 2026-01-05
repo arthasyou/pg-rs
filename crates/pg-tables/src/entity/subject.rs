@@ -9,7 +9,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub subject_id: i64,
     pub subject_type: String,
-    pub created_at: TimeDateTime,
+    pub created_at: TimeDateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

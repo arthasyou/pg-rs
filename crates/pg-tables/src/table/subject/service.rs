@@ -1,6 +1,6 @@
 use pg_core::{DbContext, OrderBy, PaginatedResponse, impl_repository};
 use sea_orm::{prelude::*, *};
-use time::{OffsetDateTime, PrimitiveDateTime};
+use time::OffsetDateTime;
 
 use crate::{
     Repository, Result,
@@ -32,12 +32,9 @@ impl SubjectService {
 
     /// 创建一个新的 Subject
     pub async fn create(&self, input: CreateSubject) -> Result<Subject> {
-        let now_offset = OffsetDateTime::now_utc();
-        let now = PrimitiveDateTime::new(now_offset.date(), now_offset.time());
-
         let active = subject::ActiveModel {
             subject_type: Set(input.kind.to_string()),
-            created_at: Set(now),
+            created_at: Set(OffsetDateTime::now_utc()),
             ..Default::default()
         };
 

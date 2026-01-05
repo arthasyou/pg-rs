@@ -1,6 +1,6 @@
 use core::fmt;
 
-use time::PrimitiveDateTime;
+use time::OffsetDateTime;
 
 use crate::table::observation::dto::ObservationValue;
 
@@ -34,7 +34,7 @@ pub struct Metric {
     pub status: MetricStatus,
 
     /// 创建时间（审计用途）
-    pub created_at: PrimitiveDateTime,
+    pub created_at: OffsetDateTime,
 }
 
 impl Metric {

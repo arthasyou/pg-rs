@@ -14,7 +14,7 @@ pub struct Model {
     pub unit: Option<String>,
     pub value_type: String,
     pub status: String,
-    pub created_at: TimeDateTime,
+    pub created_at: TimeDateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

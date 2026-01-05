@@ -11,8 +11,8 @@ pub struct Model {
     pub subject_id: i64,
     pub metric_id: i64,
     pub value: String,
-    pub observed_at: TimeDateTime,
-    pub recorded_at: TimeDateTime,
+    pub observed_at: TimeDateTimeWithTimeZone,
+    pub recorded_at: TimeDateTimeWithTimeZone,
     pub source_id: Option<i64>,
 }
 

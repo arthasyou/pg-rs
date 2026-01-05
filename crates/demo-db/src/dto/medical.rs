@@ -11,7 +11,7 @@ use pg_tables::table::{
     observation::dto::{ObservationId, ObservationPoint, ObservationValue},
     subject::dto::SubjectId,
 };
-use time::PrimitiveDateTime;
+use time::OffsetDateTime;
 
 /// =========================
 /// 业务输入 DTO
@@ -26,7 +26,7 @@ pub struct RecordObservationRequest {
     pub value: ObservationValue,
 
     /// 观测发生的时间
-    pub observed_at: PrimitiveDateTime,
+    pub observed_at: OffsetDateTime,
 
     /// 数据来源（设备 / 手工 / 第三方）
     pub source: Option<String>,
@@ -37,7 +37,7 @@ pub struct RecordObservationWithSourceRequest {
     pub subject_id: SubjectId,
     pub metric_id: MetricId,
     pub value: ObservationValue,
-    pub observed_at: PrimitiveDateTime,
+    pub observed_at: OffsetDateTime,
     pub source: CreateDataSource,
 }
 

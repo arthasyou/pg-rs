@@ -1,51 +1,32 @@
 use demo_db::{
+    CreateDataSource, DataSourceKind, MetricId, ObservationValue, SubjectId,
     dto::{
         base::Range,
         medical::{ObservationQueryResult, QueryObservationSeries},
     },
-    CreateDataSource, DataSourceKind, MetricId, ObservationValue, SubjectId,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-use time::{OffsetDateTime, PrimitiveDateTime};
+use time::{OffsetDateTime, UtcOffset};
 use utoipa::{IntoParams, ToSchema};
 
 use crate::error::{Error, Result};
 
-fn parse_pg_timestamp6(input: &str) -> Result<PrimitiveDateTime> {
-    use time::macros::format_description;
-
-    let input = input.trim();
-    let fmt_no_fraction = format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
-    if let Ok(dt) = PrimitiveDateTime::parse(input, &fmt_no_fraction) {
-        return Ok(dt);
-    }
-
-    if let Some((_, fraction)) = input.rsplit_once('.') {
-        if fraction.is_empty()
-            || fraction.len() > 6
-            || !fraction.as_bytes().iter().all(|b| b.is_ascii_digit())
-        {
-            return Err(Error::Custom(
-                "invalid datetime format, expected 'YYYY-MM-DD HH:MM:SS[.ffffff]'".into(),
-            ));
-        }
-    }
-
-    let fmt_fraction = format_description!(
-        "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:1+]"
-    );
-    PrimitiveDateTime::parse(input, &fmt_fraction).map_err(|_| {
-        Error::Custom("invalid datetime format, expected 'YYYY-MM-DD HH:MM:SS[.ffffff]'".into())
-    })
+fn parse_rfc3339(input: &str) -> Result<OffsetDateTime> {
+    let dt = OffsetDateTime::parse(input.trim(), &time::format_description::well_known::Rfc3339)
+        .map_err(|_| {
+            Error::Custom(
+                "invalid datetime format, expected RFC3339, e.g. '2025-12-30T10:02:43.893518Z'"
+                    .into(),
+            )
+        })?;
+    Ok(dt.to_offset(UtcOffset::UTC))
 }
 
-fn format_pg_timestamp6(dt: PrimitiveDateTime) -> Result<String> {
-    use time::macros::format_description;
-
-    let fmt = format_description!("[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:6]");
-    dt.format(&fmt)
-        .map_err(|_| Error::Custom("failed formatting datetime".into()))
+fn format_rfc3339_utc(dt: OffsetDateTime) -> String {
+    dt.to_offset(UtcOffset::UTC)
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_else(|_| "invalid datetime".to_string())
 }
 
 // =========================
@@ -60,29 +41,23 @@ pub struct QueryObservationRequest {
     /// metric 全局 ID
     pub metric_id: i64,
 
-    /// 查询起始时间（Postgres timestamp(6): YYYY-MM-DD HH:MM:SS[.ffffff]）
+    /// 查询起始时间（RFC3339, 例如：2025-12-30T10:02:43.893518Z）
     pub start_at: Option<String>,
 
-    /// 查询结束时间（Postgres timestamp(6): YYYY-MM-DD HH:MM:SS[.ffffff]）
+    /// 查询结束时间（RFC3339, 例如：2025-12-30T10:02:43.893518Z）
     pub end_at: Option<String>,
 }
 
 impl QueryObservationRequest {
-    pub fn to_internal(self) -> Result<(QueryObservationSeries, Range<PrimitiveDateTime>)> {
+    pub fn to_internal(self) -> Result<(QueryObservationSeries, Range<OffsetDateTime>)> {
         let start = match self.start_at {
-            Some(ref s) => parse_pg_timestamp6(s)?,
-            None => {
-                let start = OffsetDateTime::from_unix_timestamp(0).unwrap();
-                PrimitiveDateTime::new(start.date(), start.time())
-            }
+            Some(ref s) => parse_rfc3339(s)?,
+            None => OffsetDateTime::from_unix_timestamp(0).unwrap(),
         };
 
         let end = match self.end_at {
-            Some(ref s) => parse_pg_timestamp6(s)?,
-            None => {
-                let end = OffsetDateTime::now_utc();
-                PrimitiveDateTime::new(end.date(), end.time())
-            }
+            Some(ref s) => parse_rfc3339(s)?,
+            None => OffsetDateTime::now_utc(),
         };
 
         let range = Range {
@@ -116,8 +91,7 @@ impl From<(i64, ObservationQueryResult)> for QueryObservationResponse {
                 .map(|p| ObservationPointDto {
                     value: p.value.as_str().to_string(),
                     value_num: v.metric.try_parse_numeric(&p.value),
-                    observed_at: format_pg_timestamp6(p.observed_at)
-                        .unwrap_or_else(|_| "invalid datetime".to_string()),
+                    observed_at: format_rfc3339_utc(p.observed_at),
                 })
                 .collect(),
             metric: MetricDto {
@@ -142,7 +116,7 @@ pub struct MetricDto {
 pub struct ObservationPointDto {
     pub value: String,
     pub value_num: Option<f64>,
-    /// Postgres timestamp(6) formatted string: YYYY-MM-DD HH:MM:SS.ffffff
+    /// RFC3339 (UTC), 例如：2025-12-30T10:02:43.893518Z
     pub observed_at: String,
 }
 
@@ -161,7 +135,7 @@ pub struct RecordObservationRequest {
     /// 观测值
     pub value: String,
 
-    /// 观测发生的时间（Postgres timestamp(6): YYYY-MM-DD HH:MM:SS[.ffffff]）
+    /// 观测发生的时间（RFC3339, 例如：2025-12-30T10:02:43.893518Z）
     pub observed_at: String,
 
     /// 数据来源信息
@@ -183,8 +157,14 @@ pub struct SourceInput {
 impl RecordObservationRequest {
     pub fn to_internal(
         self,
-    ) -> Result<(SubjectId, MetricId, ObservationValue, PrimitiveDateTime, CreateDataSource)> {
-        let observed_at = parse_pg_timestamp6(&self.observed_at)?;
+    ) -> Result<(
+        SubjectId,
+        MetricId,
+        ObservationValue,
+        OffsetDateTime,
+        CreateDataSource,
+    )> {
+        let observed_at = parse_rfc3339(&self.observed_at)?;
 
         let source = CreateDataSource {
             kind: DataSourceKind::from(self.source.kind.as_str()),

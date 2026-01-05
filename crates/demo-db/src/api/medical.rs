@@ -10,7 +10,7 @@ use pg_tables::{
         subject::service::SubjectService,
     },
 };
-use time::PrimitiveDateTime;
+use time::OffsetDateTime;
 
 use crate::{
     Error, Result,
@@ -113,7 +113,7 @@ impl HealthApi {
     pub async fn query_observation(
         &self,
         query: QueryObservationSeries,
-        range: Range<PrimitiveDateTime>,
+        range: Range<OffsetDateTime>,
     ) -> Result<ObservationQueryResult> {
         let metric = self
             .metric

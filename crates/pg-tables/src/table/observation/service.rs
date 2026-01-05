@@ -1,6 +1,6 @@
 use pg_core::{DbContext, OrderBy, impl_repository};
 use sea_orm::{prelude::*, *};
-use time::{OffsetDateTime, PrimitiveDateTime};
+use time::OffsetDateTime;
 
 use crate::{
     Repository, Result,
@@ -37,7 +37,7 @@ impl ObservationService {
 
     /// 记录一次新的 Observation（事实写入）
     pub async fn record(&self, input: RecordObservation) -> Result<Observation> {
-        let recorded_at = Self::now_primitive();
+        let recorded_at = Self::now_utc();
         let active = observation::ActiveModel {
             subject_id: Set(input.subject_id.0),
             metric_id: Set(input.metric_id.0),
@@ -61,7 +61,7 @@ impl ObservationService {
     pub async fn query_observation(
         &self,
         key: ObservationQueryKey,
-        range: Range<PrimitiveDateTime>,
+        range: Range<OffsetDateTime>,
     ) -> Result<Vec<ObservationPoint>> {
         let mut condition = Condition::all()
             .add(observation::Column::SubjectId.eq(key.subject_id.0))
@@ -90,9 +90,8 @@ impl ObservationService {
             .collect())
     }
 
-    fn now_primitive() -> PrimitiveDateTime {
-        let now_offset = OffsetDateTime::now_utc();
-        PrimitiveDateTime::new(now_offset.date(), now_offset.time())
+    fn now_utc() -> OffsetDateTime {
+        OffsetDateTime::now_utc()
     }
 
     /// ===============================

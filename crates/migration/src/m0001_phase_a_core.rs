@@ -27,7 +27,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(Subject::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
@@ -82,7 +82,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(Metric::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
@@ -123,7 +123,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(DataSource::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
@@ -164,13 +164,13 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(Observation::ObservedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .comment("When the fact occurred"),
                     )
                     .col(
                         ColumnDef::new(Observation::RecordedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp())
                             .comment("When the fact was recorded in the system"),

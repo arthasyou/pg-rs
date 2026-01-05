@@ -65,17 +65,15 @@
 
 - `subject_id`：`i64`（必填）
 - `metric_id`：`i64`（必填）
-- `start_at`：Postgres `timestamp(6)` 字符串（可选），格式 `YYYY-MM-DD HH:MM:SS[.ffffff]`
-- `end_at`：Postgres `timestamp(6)` 字符串（可选），格式 `YYYY-MM-DD HH:MM:SS[.ffffff]`
+- `start_at`：RFC3339 时间字符串（可选），建议使用 UTC（`Z`）避免 query 里 `+` 号编码问题
+- `end_at`：RFC3339 时间字符串（可选），建议使用 UTC（`Z`）避免 query 里 `+` 号编码问题
 
-数据库字段类型为 `timestamp(6)`（无时区），因此 API 也使用 **无时区** 的时间字符串；服务端不会做时区转换，按字符串解析后的“本地时间”语义参与查询。
+数据库字段类型为 `timestamptz`（带时区），服务端内部统一按 **UTC** 语义处理时间。
 
 示例：
 
-- `2025-12-30 10:02:43`
-- 带微秒：`2025-12-30 10:02:43.893518`
-
-注意：在 URL query 里空格需要编码（`%20` 或 `+`），前端用 `encodeURIComponent` 即可。
+- `2025-12-30T10:02:43Z`
+- 带微秒：`2025-12-30T10:02:43.893518Z`
 
 #### QueryObservationResponse
 
@@ -92,7 +90,7 @@
     {
       "value": "string",
       "value_num": 123.45,
-      "observed_at": "string, Postgres timestamp(6) 格式：YYYY-MM-DD HH:MM:SS.ffffff"
+      "observed_at": "RFC3339 string (UTC), e.g. 2025-12-30T10:02:43.893518Z"
     }
   ]
 }
@@ -110,7 +108,7 @@
   "subject_id": 1,
   "metric_id": 1,
   "value": "string",
-  "observed_at": "string, Postgres timestamp(6) 格式：YYYY-MM-DD HH:MM:SS[.ffffff]",
+  "observed_at": "RFC3339 string (UTC), e.g. 2025-12-30T10:02:43.893518Z",
   "source": {
     "kind": "device | manual | import | system | <other>",
     "name": "string",
@@ -145,18 +143,14 @@ Base path：`/medical`
 - Query Params：`QueryObservationRequest`
   - `subject_id`：必填
   - `metric_id`：必填
-  - `start_at`：可选，`YYYY-MM-DD HH:MM:SS[.ffffff]`
-  - `end_at`：可选，`YYYY-MM-DD HH:MM:SS[.ffffff]`
+  - `start_at`：可选，RFC3339（建议 UTC `Z`）
+  - `end_at`：可选，RFC3339（建议 UTC `Z`）
 - Success Response：`CommonResponse<QueryObservationResponse>`
 
 示例：
 
 ```bash
-curl --get "http://localhost:19878/medical/observations" \
-  --data-urlencode "subject_id=1" \
-  --data-urlencode "metric_id=1" \
-  --data-urlencode "start_at=2025-12-30 10:02:43.893518" \
-  --data-urlencode "end_at=2025-12-31 10:02:43.893518"
+curl "http://localhost:19878/medical/observations?subject_id=1&metric_id=1&start_at=2025-12-30T10:02:43.893518Z&end_at=2025-12-31T10:02:43.893518Z"
 ```
 
 #### 5.1.2 POST `/medical/observations`
@@ -176,7 +170,7 @@ curl -X POST http://localhost:19878/medical/observations \
     "subject_id": 1,
     "metric_id": 1,
     "value": "120",
-    "observed_at": "2025-12-30 10:02:43.893518",
+    "observed_at": "2025-12-30T10:02:43.893518Z",
     "source": {
       "kind": "device",
       "name": "Apple Watch",
@@ -217,7 +211,7 @@ export interface MetricDto {
 export interface ObservationPointDto {
   value: string;
   value_num?: number | null;
-  observed_at: string; // YYYY-MM-DD HH:MM:SS.ffffff
+  observed_at: string; // RFC3339 (UTC), e.g. 2025-12-30T10:02:43.893518Z
 }
 
 export interface QueryObservationResponse {
@@ -236,7 +230,7 @@ export interface RecordObservationRequest {
   subject_id: number;
   metric_id: number;
   value: string;
-  observed_at: string; // YYYY-MM-DD HH:MM:SS[.ffffff]
+  observed_at: string; // RFC3339 (UTC recommended), e.g. 2025-12-30T10:02:43.893518Z
   source: SourceInput;
 }
 
@@ -249,6 +243,6 @@ export interface RecordObservationResponse {
 ## 7. 前端实现要点（生成代码时必须遵守）
 
 1. **所有成功响应都要先解 envelope**：拿 `resp.data` 作为业务数据。
-2. **时间格式严格按 `timestamp(6)`**：`YYYY-MM-DD HH:MM:SS[.ffffff]`（无时区），query 参数注意 URL encode 空格。
-3. **注意微秒精度**：数据库是 `timestamp(6)`，API 可能返回 `...893518`；但浏览器 `Date` 只有毫秒精度，如需保留微秒请在前端以字符串保存。
+2. **时间格式严格按 RFC3339**：建议统一用 UTC（`Z`），避免 query 参数里 `+08:00` 的 `+` 需要编码成 `%2B`。
+3. **注意微秒精度**：数据库是 `timestamptz`，API 可能返回带小数秒；但浏览器 `Date` 只有毫秒精度，如需保留微秒请在前端以字符串保存。
 4. **错误按 HTTP status + CommonError 处理**：非 2xx 时优先读 JSON `{code,message}`，如果读不到就展示通用错误信息。

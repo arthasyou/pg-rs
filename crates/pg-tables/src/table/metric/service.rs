@@ -1,6 +1,6 @@
 use pg_core::{DbContext, OrderBy, PaginatedResponse, Error, impl_repository};
 use sea_orm::{prelude::*, *};
-use time::{OffsetDateTime, PrimitiveDateTime};
+use time::OffsetDateTime;
 
 use crate::{
     Repository, Result,
@@ -42,7 +42,7 @@ impl MetricService {
             ));
         }
 
-        let now = Self::now_primitive();
+        let now = Self::now_utc();
         let active = metric::ActiveModel {
             metric_code: Set(input.code.0),
             metric_name: Set(input.name),
@@ -134,9 +134,8 @@ impl MetricService {
         Ok(response.map(Self::from_model))
     }
 
-    fn now_primitive() -> PrimitiveDateTime {
-        let now_offset = OffsetDateTime::now_utc();
-        PrimitiveDateTime::new(now_offset.date(), now_offset.time())
+    fn now_utc() -> OffsetDateTime {
+        OffsetDateTime::now_utc()
     }
 
     /// ===============================

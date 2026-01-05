@@ -1,6 +1,6 @@
 use core::fmt;
 
-use time::PrimitiveDateTime;
+use time::OffsetDateTime;
 
 /// Subject 表示：
 /// 一个可以被健康事实（Observation）指向的“存在主体”
@@ -18,7 +18,7 @@ pub struct Subject {
     pub kind: SubjectKind,
 
     /// 创建时间（用于审计、排序，不参与业务推理）
-    pub created_at: PrimitiveDateTime,
+    pub created_at: OffsetDateTime,
 }
 
 /// 创建 Subject 的输入参数

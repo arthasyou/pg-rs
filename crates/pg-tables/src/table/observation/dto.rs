@@ -1,6 +1,6 @@
 // pg-tables/src/core/observation.rs
 
-use time::PrimitiveDateTime;
+use time::OffsetDateTime;
 
 use crate::table::{
     data_source::dto::DataSourceId, metric::dto::MetricId, subject::dto::SubjectId,
@@ -29,10 +29,10 @@ pub struct Observation {
     pub value: ObservationValue,
 
     /// 事实发生时间（设备时间 / 业务时间）
-    pub observed_at: PrimitiveDateTime,
+    pub observed_at: OffsetDateTime,
 
     /// 系统记录时间（写入时间）
-    pub recorded_at: PrimitiveDateTime,
+    pub recorded_at: OffsetDateTime,
 
     /// 数据来源（可选）
     pub source_id: Option<DataSourceId>,
@@ -44,7 +44,7 @@ pub struct RecordObservation {
     pub subject_id: SubjectId,
     pub metric_id: MetricId,
     pub value: ObservationValue,
-    pub observed_at: PrimitiveDateTime,
+    pub observed_at: OffsetDateTime,
     pub source_id: Option<DataSourceId>,
 }
 
@@ -57,7 +57,7 @@ pub struct ObservationQueryKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservationPoint {
     pub value: ObservationValue,
-    pub observed_at: PrimitiveDateTime,
+    pub observed_at: OffsetDateTime,
 }
 
 /// Observation 的强类型 ID

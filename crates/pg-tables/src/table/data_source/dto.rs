@@ -1,7 +1,7 @@
 use core::fmt;
 
 use serde_json::Value as JsonValue;
-use time::PrimitiveDateTime;
+use time::OffsetDateTime;
 
 /// DataSource 表示：
 /// 一条健康数据的来源背景
@@ -20,7 +20,7 @@ pub struct DataSource {
     pub metadata: Option<JsonValue>,
 
     /// 创建时间（审计用途）
-    pub created_at: PrimitiveDateTime,
+    pub created_at: OffsetDateTime,
 }
 
 /// 创建 DataSource 的输入参数
