@@ -35,9 +35,7 @@ pub async fn query_observations(
     let subject_id = req.subject_id;
 
     // 2. web request → internal 参数
-    let (query, range) = req
-        .to_internal()
-        .map_err(|_| Error::Custom("invalid request".into()))?;
+    let (query, range) = req.to_internal()?;
 
     // 3. 调用内部查询
     let result = api

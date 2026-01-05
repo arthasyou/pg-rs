@@ -1,21 +1,13 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
-
 use axum::{Router, routing::get};
 use toolcraft_axum_kit::{CommonError, CommonResponse};
 use utoipa::OpenApi;
 
 use crate::{
-    dto::{
-        example::{CreateItemRequest, ItemResponse, MessageResponse},
-        medical::{RecordObservationRequest, RecordObservationResponse, SourceInput},
+    dto::medical::{
+        MetricDto, ObservationPointDto, QueryObservationRequest, QueryObservationResponse,
+        RecordObservationRequest, RecordObservationResponse, SourceInput,
     },
-    handlers::{
-        example::ItemStore,
-        medical::{query_observations, record_observation},
-    },
+    handlers::medical::{query_observations, record_observation},
 };
 
 #[derive(OpenApi)]
@@ -26,15 +18,14 @@ use crate::{
     ),
     components(
         schemas(
-            CreateItemRequest,
-            ItemResponse,
-            MessageResponse,
+            QueryObservationRequest,
+            QueryObservationResponse,
+            MetricDto,
+            ObservationPointDto,
             RecordObservationRequest,
-            RecordObservationResponse,
             SourceInput,
-            CommonResponse<ItemResponse>,
-            CommonResponse<Vec<ItemResponse>>,
-            CommonResponse<MessageResponse>,
+            RecordObservationResponse,
+            CommonResponse<QueryObservationResponse>,
             CommonResponse<RecordObservationResponse>,
             CommonError
         )
@@ -46,9 +37,6 @@ use crate::{
 pub struct MedicalApi;
 
 pub fn medical_routes() -> Router {
-    let store: ItemStore = Arc::new(Mutex::new(HashMap::new()));
-
     Router::new()
         .route("/observations", get(query_observations).post(record_observation))
-        .with_state(store)
 }
