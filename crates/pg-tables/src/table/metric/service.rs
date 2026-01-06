@@ -131,6 +131,21 @@ impl MetricService {
         Ok(response.map(Self::from_model))
     }
 
+    /// 获取可用于选择的 Metric 列表（给前端下拉框用）
+    pub async fn list_selectable(&self) -> Result<Vec<Metric>> {
+        let condition =
+            Condition::all().add(metric::Column::Status.eq(MetricStatus::Active.to_string()));
+
+        let order_by = OrderBy::asc(metric::Column::MetricName);
+
+        let models = self
+            .repo
+            .find_with_filter_and_order(condition, &order_by)
+            .await?;
+
+        Ok(models.into_iter().map(Self::from_model).collect())
+    }
+
     fn now_utc() -> OffsetDateTime {
         OffsetDateTime::now_utc()
     }

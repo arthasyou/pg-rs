@@ -84,7 +84,8 @@
     "id": 1,
     "code": "string",
     "name": "string",
-    "unit": "string | null"
+    "unit": "string | null",
+    "vazualization": "line_chart | bar_chart | value_list | single_value"
   },
   "points": [
     {
@@ -100,6 +101,7 @@
 
 - `points` 默认按 `observed_at` **升序**返回（来自 DB 查询排序）
 - `value` 永远是字符串；`value_num` 是服务端尝试把 `value` 转为数值后的结果（转不了则为 `null`）
+- `metric.vazualization` 表示指标的可视化类型：`line_chart` / `bar_chart` / `value_list` / `single_value`
 
 #### RecordObservationRequest
 
@@ -206,6 +208,7 @@ export interface MetricDto {
   code: string;
   name: string;
   unit?: string | null;
+  vazualization: string; // line_chart | bar_chart | value_list | single_value
 }
 
 export interface ObservationPointDto {

@@ -2,7 +2,7 @@ use pg_tables::{
     pg_core::DbContext,
     table::{
         data_source::{dto::DataSourceId, service::DataSourceService},
-        metric::service::MetricService,
+        metric::{dto::Metric, service::MetricService},
         observation::{
             dto::{ObservationQueryKey, RecordObservation},
             service::ObservationService,
@@ -18,7 +18,7 @@ use crate::{
         base::Range,
         medical::{
             ObservationQueryResult, QueryObservationSeries, RecordObservationRequest,
-            RecordObservationWithSourceRequest, RecordObservationResult,
+            RecordObservationResult, RecordObservationWithSourceRequest,
         },
     },
 };
@@ -132,5 +132,9 @@ impl HealthApi {
             .await?;
 
         Ok(ObservationQueryResult { metric, points })
+    }
+
+    pub async fn list_selectable_metrics(&self) -> Result<Vec<Metric>> {
+        self.metric.list_selectable().await
     }
 }
