@@ -99,6 +99,7 @@ impl From<(i64, ObservationQueryResult)> for QueryObservationResponse {
                 code: v.metric.code.as_ref().to_string(),
                 name: v.metric.name,
                 unit: v.metric.unit,
+                vazualization: v.metric.visualization.to_string(),
             },
         }
     }
@@ -110,6 +111,7 @@ pub struct MetricDto {
     pub code: String,
     pub name: String,
     pub unit: Option<String>,
+    pub vazualization: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

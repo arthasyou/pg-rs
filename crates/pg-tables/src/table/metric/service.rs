@@ -1,4 +1,4 @@
-use pg_core::{DbContext, OrderBy, PaginatedResponse, Error, impl_repository};
+use pg_core::{DbContext, Error, OrderBy, PaginatedResponse, impl_repository};
 use sea_orm::{prelude::*, *};
 use time::OffsetDateTime;
 
@@ -9,6 +9,7 @@ use crate::{
         dto::PaginationInput,
         metric::dto::{
             CreateMetric, ListMetric, Metric, MetricCode, MetricId, MetricStatus, MetricValueType,
+            MetricVisualization,
         },
     },
 };
@@ -35,11 +36,7 @@ impl MetricService {
     /// 创建一个新的 Metric
     pub async fn create(&self, input: CreateMetric) -> Result<Metric> {
         if self.exists_by_code(&input.code).await? {
-            return Err(Error::already_exists(
-                "Metric",
-                "metric_code",
-                input.code.0,
-            ));
+            return Err(Error::already_exists("Metric", "metric_code", input.code.0));
         }
 
         let now = Self::now_utc();
@@ -149,6 +146,7 @@ impl MetricService {
             name: model.metric_name,
             unit: model.unit,
             value_type: MetricValueType::from(model.value_type),
+            visualization: MetricVisualization::from(model.visualization),
             status: MetricStatus::from(model.status),
             created_at: model.created_at,
         }

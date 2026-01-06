@@ -13,6 +13,7 @@ pub struct Model {
     pub metric_name: String,
     pub unit: Option<String>,
     pub value_type: String,
+    pub visualization: String,
     pub status: String,
     pub created_at: TimeDateTimeWithTimeZone,
 }

@@ -30,6 +30,8 @@ pub struct Metric {
     /// 指标值的类型定义
     pub value_type: MetricValueType,
 
+    pub visualization: MetricVisualization,
+
     /// 指标当前状态
     pub status: MetricStatus,
 
@@ -111,6 +113,15 @@ pub enum MetricValueType {
     Text,
 }
 
+/// 指标的可视化类型
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MetricVisualization {
+    LineChart,
+    BarChart,
+    ValueList,
+    SingleValue,
+}
+
 /// 指标的生命周期状态
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MetricStatus {
@@ -157,6 +168,45 @@ impl From<&str> for MetricValueType {
 impl From<String> for MetricValueType {
     fn from(value: String) -> Self {
         MetricValueType::from(value.as_str())
+    }
+}
+
+impl MetricVisualization {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MetricVisualization::LineChart => "line_chart",
+            MetricVisualization::BarChart => "bar_chart",
+            MetricVisualization::ValueList => "value_list",
+            MetricVisualization::SingleValue => "single_value",
+        }
+    }
+}
+
+impl fmt::Display for MetricVisualization {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl From<&str> for MetricVisualization {
+    fn from(value: &str) -> Self {
+        match value {
+            "line_chart" => MetricVisualization::LineChart,
+            "bar_chart" => MetricVisualization::BarChart,
+            "value_list" => MetricVisualization::ValueList,
+            "single_value" => MetricVisualization::SingleValue,
+            _ => {
+                // 这里不 panic，是非常重要的设计选择
+                // 防止脏数据把系统炸掉
+                MetricVisualization::SingleValue
+            }
+        }
+    }
+}
+
+impl From<String> for MetricVisualization {
+    fn from(value: String) -> Self {
+        MetricVisualization::from(value.as_str())
     }
 }
 

@@ -74,6 +74,15 @@ impl MigrationTrait for Migration {
                             .comment("Type: int, float, string"),
                     )
                     .col(
+                        ColumnDef::new(Metric::Visualization)
+                            .string()
+                            .not_null()
+                            .comment(
+                                "Visualization type: line_chart, bar_chart, value_list, \
+                                 single_value",
+                            ),
+                    )
+                    .col(
                         ColumnDef::new(Metric::Status)
                             .string()
                             .not_null()
@@ -273,6 +282,7 @@ enum Metric {
     MetricName,
     Unit,
     ValueType,
+    Visualization,
     Status,
     CreatedAt,
 }
