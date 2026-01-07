@@ -4,10 +4,11 @@ use utoipa::OpenApi;
 
 use crate::{
     dto::medical::{
-        MetricDto, ObservationPointDto, QueryObservationRequest, QueryObservationResponse,
-        RecordObservationRequest, RecordObservationResponse, SourceInput,
+        ListSelectableMetricsResponse, MetricDto, ObservationPointDto, QueryObservationRequest,
+        QueryObservationResponse, RecordObservationRequest, RecordObservationResponse,
+        SelectableMetricDto, SourceInput,
     },
-    handlers::medical::{query_observations, record_observation},
+    handlers::medical::{list_selectable_metrics, query_observations, record_observation},
 };
 
 #[derive(OpenApi)]
@@ -15,6 +16,7 @@ use crate::{
     paths(
         crate::handlers::medical::query_observations,
         crate::handlers::medical::record_observation,
+        crate::handlers::medical::list_selectable_metrics,
     ),
     components(
         schemas(
@@ -25,8 +27,11 @@ use crate::{
             RecordObservationRequest,
             SourceInput,
             RecordObservationResponse,
+            ListSelectableMetricsResponse,
+            SelectableMetricDto,
             CommonResponse<QueryObservationResponse>,
             CommonResponse<RecordObservationResponse>,
+            CommonResponse<ListSelectableMetricsResponse>,
             CommonError
         )
     ),
@@ -39,4 +44,5 @@ pub struct MedicalApi;
 pub fn medical_routes() -> Router {
     Router::new()
         .route("/observations", get(query_observations).post(record_observation))
+        .route("/metrics/selectable", get(list_selectable_metrics))
 }

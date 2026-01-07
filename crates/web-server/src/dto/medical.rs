@@ -30,6 +30,23 @@ fn format_rfc3339_utc(dt: OffsetDateTime) -> String {
 }
 
 // =========================
+// List Selectable Metrics
+// =========================
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ListSelectableMetricsResponse {
+    pub metrics: Vec<SelectableMetricDto>,
+}
+
+/// 前端下拉框选项（仅保留必要字段）
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SelectableMetricDto {
+    pub id: i64,
+    pub name: String,
+    pub unit: Option<String>,
+}
+
+// =========================
 // Query Observation
 // =========================
 

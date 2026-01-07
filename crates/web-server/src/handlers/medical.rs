@@ -8,8 +8,8 @@ use toolcraft_axum_kit::{CommonResponse, IntoCommonResponse, ResponseResult};
 
 use crate::{
     dto::medical::{
-        QueryObservationRequest, QueryObservationResponse, RecordObservationRequest,
-        RecordObservationResponse,
+        ListSelectableMetricsResponse, QueryObservationRequest, QueryObservationResponse,
+        RecordObservationRequest, RecordObservationResponse, SelectableMetricDto,
     },
     error::Error,
     statics::db_manager::get_default_ctx,
@@ -84,6 +84,33 @@ pub async fn record_observation(
     let resp = RecordObservationResponse {
         observation_id: result.observation_id.0,
         source_id: result.source_id.0,
+    };
+
+    Ok(resp.into_common_response().to_json())
+}
+
+#[utoipa::path(
+    get,
+    path = "/metrics/selectable",
+    tag = "Medical",
+    responses(
+        (status = 200, description = "List selectable metrics", body = CommonResponse<ListSelectableMetricsResponse>),
+    )
+)]
+pub async fn list_selectable_metrics() -> ResponseResult<ListSelectableMetricsResponse> {
+    let api = HealthApi::new(get_default_ctx());
+
+    let metrics = api.list_selectable_metrics().await.map_err(Error::Core)?;
+
+    let resp = ListSelectableMetricsResponse {
+        metrics: metrics
+            .into_iter()
+            .map(|m| SelectableMetricDto {
+                id: m.id.0,
+                name: m.name,
+                unit: m.unit,
+            })
+            .collect(),
     };
 
     Ok(resp.into_common_response().to_json())

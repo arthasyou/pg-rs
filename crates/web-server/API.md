@@ -131,6 +131,22 @@
 }
 ```
 
+#### ListSelectableMetricsResponse
+
+用途：前端下拉框的 metric 选项列表（只返回必要字段）。
+
+```json
+{
+  "metrics": [
+    {
+      "id": 1,
+      "name": "string",
+      "unit": "string | null"
+    }
+  ]
+}
+```
+
 ## 5. API 列表（按业务分组）
 
 ### 5.1 Medical
@@ -179,6 +195,19 @@ curl -X POST http://localhost:19878/medical/observations \
       "metadata": { "model": "Series 9" }
     }
   }'
+```
+
+#### 5.1.3 GET `/medical/metrics/selectable`
+
+用途：获取可用于选择的 metric 列表（给前端下拉框用）。
+
+- Auth：无
+- Success Response：`CommonResponse<ListSelectableMetricsResponse>`
+
+示例：
+
+```bash
+curl "http://localhost:19878/medical/metrics/selectable"
 ```
 
 ## 6. TypeScript 类型（建议直接复用）
@@ -240,6 +269,16 @@ export interface RecordObservationRequest {
 export interface RecordObservationResponse {
   observation_id: number;
   source_id: number;
+}
+
+export interface SelectableMetricDto {
+  id: number;
+  name: string;
+  unit?: string | null;
+}
+
+export interface ListSelectableMetricsResponse {
+  metrics: SelectableMetricDto[];
 }
 ```
 
