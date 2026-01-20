@@ -5,6 +5,7 @@ mod logging;
 mod routes;
 mod settings;
 mod statics;
+mod utils;
 
 use std::sync::Arc;
 
@@ -12,7 +13,10 @@ use settings::Settings;
 use toolcraft_axum_kit::http_server;
 use toolcraft_jwt::Jwt;
 
-use crate::{logging::init_tracing_to_file, statics::db_manager::init_db};
+use crate::{
+    logging::init_tracing_to_file, statics::db_manager::init_db,
+    statics::llm_client::init_llm,
+};
 
 #[tokio::main]
 async fn main() {
@@ -21,6 +25,8 @@ async fn main() {
     init_db(settings.db.clone())
         .await
         .expect("DatabaseManager initialization failed");
+
+    init_llm(settings.llm).expect("LLM Client initialization failed");
 
     let jwt = Arc::new(Jwt::new(settings.jwt));
     let router = routes::create_routes(jwt);

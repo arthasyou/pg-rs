@@ -1,4 +1,5 @@
 mod medical;
+mod llm;
 
 use std::sync::Arc;
 
@@ -24,6 +25,7 @@ pub fn create_routes(jwt: Arc<Jwt>) -> Router {
 
     Router::new()
         .nest("/medical", medical::medical_routes())
+        .nest("/llm", llm::create_llm_routes())
         .layer(Extension(jwt))
         .layer(cors)
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", doc))

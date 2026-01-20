@@ -206,3 +206,99 @@ pub struct RecordObservationResponse {
     pub observation_id: i64,
     pub source_id: i64,
 }
+
+// =========================
+// Upload Markdown Data Source
+// =========================
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UploadMarkdownRequest {
+    /// 数据来源类型 (device / manual / import / system)
+    pub source_type: String,
+
+    /// 数据来源名称
+    pub source_name: String,
+
+    /// 文件内容（文本形式）
+    pub file_content: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct UploadMarkdownResponse {
+    pub source_id: i64,
+    pub source_type: String,
+    pub source_name: String,
+    /// 解析后的 Markdown JSON 数据
+    pub parsed_data: JsonValue,
+    pub created_at: String,
+}
+
+// =========================
+// Extract Health Metrics with LLM
+// =========================
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ExtractHealthMetricsRequest {
+    /// 健康检查 Markdown 内容
+    pub content: String,
+
+    /// 患者ID
+    pub subject_id: i64,
+
+    /// 数据来源类型
+    #[serde(default)]
+    pub source_type: Option<String>,
+
+    /// 数据来源名称
+    #[serde(default)]
+    pub source_name: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct HealthMetric {
+    /// 指标代码 (如: blood_glucose, blood_pressure 等)
+    pub metric_code: String,
+
+    /// 指标值（字符串格式，包含单位）
+    pub value: String,
+
+    /// 参考范围
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reference_range: Option<String>,
+
+    /// 是否异常
+    #[serde(default)]
+    pub is_abnormal: bool,
+
+    /// 异常说明
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub abnormality_note: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ExtractedHealthData {
+    /// 患者基本信息
+    pub patient_info: JsonValue,
+
+    /// 提取的医疗指标
+    pub metrics: Vec<HealthMetric>,
+
+    /// 主要诊断/结论
+    pub diagnoses: Vec<String>,
+
+    /// 健康建议
+    pub recommendations: Vec<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ExtractHealthMetricsResponse {
+    /// 提取的健康数据
+    pub data: ExtractedHealthData,
+
+    /// 数据来源ID（如果已保存）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_id: Option<i64>,
+
+    /// 插入的观测记录数
+    pub records_inserted: usize,
+}

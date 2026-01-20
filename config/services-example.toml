@@ -19,3 +19,12 @@ connect_timeout = 30
 idle_timeout = 600
 sql_logging = false
 
+[llm]
+# LLM 模型配置
+# 默认使用 10.100.11.245 上的 gpt-oss:120b 模型
+# 如需使用其他模型提供商，修改以下配置：
+#   - OpenAI: base_url = "https://api.openai.com/v1", model = "gpt-4", api_key = "sk-..."
+#   - 本地 Ollama: base_url = "http://localhost:11434", model = "llama2", api_key = ""
+base_url = "http://10.100.11.245:11434"
+model = "gpt-oss:120b"
+api_key = ""
