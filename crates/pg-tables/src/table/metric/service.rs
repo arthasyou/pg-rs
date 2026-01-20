@@ -8,7 +8,7 @@ use crate::{
     table::{
         dto::PaginationInput,
         metric::dto::{
-            CreateMetric, ListMetric, Metric, MetricCode, MetricId, MetricStatus, MetricValueType,
+            CreateMetric, ListMetric, Metric, MetricCode, MetricId, MetricValueType,
             MetricVisualization,
         },
     },
@@ -45,7 +45,6 @@ impl MetricService {
             metric_name: Set(input.name),
             unit: Set(input.unit),
             value_type: Set(input.value_type.to_string()),
-            status: Set(MetricStatus::Active.to_string()),
             created_at: Set(now),
             ..Default::default()
         };
@@ -89,20 +88,7 @@ impl MetricService {
         Ok(found.is_some())
     }
 
-    /// 将 Metric 标记为 Deprecated（受控更新）
-    pub async fn deprecate(&self, id: MetricId) -> Result<Option<Metric>> {
-        let Some(model) = self.repo.find_by_id(id.0).await? else {
-            return Ok(None);
-        };
-
-        let mut active: metric::ActiveModel = model.into();
-        active.status = Set(MetricStatus::Deprecated.to_string());
-
-        let model = self.repo.update(active).await?;
-        Ok(Some(Self::from_model(model)))
-    }
-
-    /// 查询 Metric（可选按状态/类型过滤）
+    /// 查询 Metric（可选按类型过滤）
     pub async fn list(
         &self,
         input: ListMetric,
@@ -111,10 +97,6 @@ impl MetricService {
         let mut condition = Condition::all();
         let mut has_condition = false;
 
-        if let Some(status) = input.status {
-            condition = condition.add(metric::Column::Status.eq(status.to_string()));
-            has_condition = true;
-        }
         if let Some(value_type) = input.value_type {
             condition = condition.add(metric::Column::ValueType.eq(value_type.to_string()));
             has_condition = true;
@@ -133,11 +115,9 @@ impl MetricService {
 
     /// 获取可用于选择的 Metric 列表（给前端下拉框用）
     pub async fn list_selectable(&self) -> Result<Vec<Metric>> {
-        let condition =
-            Condition::all().add(metric::Column::Status.eq(MetricStatus::Active.to_string()));
-
         let order_by = OrderBy::asc(metric::Column::MetricName);
 
+        let condition = Condition::all();
         let models = self
             .repo
             .find_with_filter_and_order(condition, &order_by)
@@ -162,7 +142,6 @@ impl MetricService {
             unit: model.unit,
             value_type: MetricValueType::from(model.value_type),
             visualization: MetricVisualization::from(model.visualization),
-            status: MetricStatus::from(model.status),
             created_at: model.created_at,
         }
     }

@@ -14,20 +14,10 @@ pub struct Model {
     pub unit: Option<String>,
     pub value_type: String,
     pub visualization: String,
-    pub status: String,
     pub created_at: TimeDateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(has_many = "super::observation::Entity")]
-    Observation,
-}
-
-impl Related<super::observation::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Observation.def()
-    }
-}
+pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}

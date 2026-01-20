@@ -7,19 +7,34 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(table_name = "recipe")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: i64,
-    pub output_metric_id: i64,
-    #[sea_orm(column_type = "JsonBinary")]
+    pub recipe_id: i64,
+    pub kind: String,
+    #[sea_orm(column_type = "JsonBinary", nullable)]
     pub deps: Json,
-    pub calc_key: String,
+    pub calc_key: Option<String>,
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub arg_map: Option<Json>,
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub expr: Option<Json>,
+    pub metric_code: Option<String>,
+    pub metric_name: Option<String>,
+    pub unit: Option<String>,
+    pub value_type: Option<String>,
+    pub visualization: Option<String>,
+    pub status: String,
     pub created_at: TimeDateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::observation::Entity")]
+    Observation,
+}
+
+impl Related<super::observation::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Observation.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

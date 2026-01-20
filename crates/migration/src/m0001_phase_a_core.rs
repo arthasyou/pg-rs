@@ -83,13 +83,6 @@ impl MigrationTrait for Migration {
                             ),
                     )
                     .col(
-                        ColumnDef::new(Metric::Status)
-                            .string()
-                            .not_null()
-                            .default("active")
-                            .comment("Status: active, deprecated"),
-                    )
-                    .col(
                         ColumnDef::new(Metric::CreatedAt)
                             .timestamp_with_time_zone()
                             .not_null()
@@ -159,7 +152,7 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(
-                        ColumnDef::new(Observation::MetricId)
+                        ColumnDef::new(Observation::RecipeId)
                             .big_integer()
                             .not_null(),
                     )
@@ -168,7 +161,7 @@ impl MigrationTrait for Migration {
                             .string()
                             .not_null()
                             .comment(
-                                "Value stored as string, parsed according to metric.value_type",
+                                "Value stored as string, parsed according to recipe.value_type",
                             ),
                     )
                     .col(
@@ -190,30 +183,6 @@ impl MigrationTrait for Migration {
                             .null()
                             .comment("Optional reference to data source"),
                     )
-                    // .foreign_key(
-                    //     ForeignKey::create()
-                    //         .name("fk_observation_subject")
-                    //         .from(Observation::Table, Observation::SubjectId)
-                    //         .to(Subject::Table, Subject::SubjectId)
-                    //         .on_delete(ForeignKeyAction::Cascade)
-                    //         .on_update(ForeignKeyAction::Cascade),
-                    // )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk_observation_metric")
-                            .from(Observation::Table, Observation::MetricId)
-                            .to(Metric::Table, Metric::MetricId)
-                            .on_delete(ForeignKeyAction::Restrict)
-                            .on_update(ForeignKeyAction::Cascade),
-                    )
-                    // .foreign_key(
-                    //     ForeignKey::create()
-                    //         .name("fk_observation_source")
-                    //         .from(Observation::Table, Observation::SourceId)
-                    //         .to(DataSource::Table, DataSource::SourceId)
-                    //         .on_delete(ForeignKeyAction::SetNull)
-                    //         .on_update(ForeignKeyAction::Cascade),
-                    // )
                     .to_owned(),
             )
             .await?;
@@ -222,10 +191,10 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .name("idx_observation_subject_metric")
+                    .name("idx_observation_subject_recipe")
                     .table(Observation::Table)
                     .col(Observation::SubjectId)
-                    .col(Observation::MetricId)
+                    .col(Observation::RecipeId)
                     .to_owned(),
             )
             .await?;
@@ -283,7 +252,6 @@ enum Metric {
     Unit,
     ValueType,
     Visualization,
-    Status,
     CreatedAt,
 }
 
@@ -302,7 +270,7 @@ enum Observation {
     Table,
     ObservationId,
     SubjectId,
-    MetricId,
+    RecipeId,
     Value,
     ObservedAt,
     RecordedAt,

@@ -1,25 +1,20 @@
-use axum::extract::Query;
-use axum::Json;
+use axum::{Json, extract::Query};
 use demo_db::{
-    api::medical::HealthApi,
-    dto::medical::RecordObservationWithSourceRequest,
-    CreateDataSource,
+    CreateDataSource, api::medical::HealthApi, dto::medical::RecordObservationWithSourceRequest,
 };
-use toolcraft_axum_kit::{CommonResponse, IntoCommonResponse, ResponseResult};
 use time::OffsetDateTime;
+use toolcraft_axum_kit::{CommonResponse, IntoCommonResponse, ResponseResult};
 
 use crate::{
     dto::medical::{
-        ListSelectableMetricsResponse, QueryObservationRequest, QueryObservationResponse,
-        RecordObservationRequest, RecordObservationResponse, SelectableMetricDto,
-        UploadMarkdownRequest, UploadMarkdownResponse,
         ExtractHealthMetricsRequest, ExtractHealthMetricsResponse, ExtractedHealthData,
-        HealthMetric,
+        HealthMetric, ListSelectableRecipesResponse, QueryObservationRequest,
+        QueryObservationResponse, RecordObservationRequest, RecordObservationResponse,
+        SelectableRecipeDto, UploadMarkdownRequest, UploadMarkdownResponse,
     },
     error::Error,
     statics::db_manager::get_default_ctx,
-    utils::parse_markdown,
-    utils::extract_health_metrics_with_llm,
+    utils::{extract_health_metrics_with_llm, parse_markdown},
 };
 
 #[utoipa::path(
@@ -71,12 +66,12 @@ pub async fn record_observation(
     let api = HealthApi::new(get_default_ctx());
 
     // web request → internal 参数
-    let (subject_id, metric_id, value, observed_at, source) = req.to_internal()?;
+    let (subject_id, recipe_id, value, observed_at, source) = req.to_internal()?;
 
     // 构造业务请求
     let internal_req = RecordObservationWithSourceRequest {
         subject_id,
-        metric_id,
+        recipe_id,
         value,
         observed_at,
         source,
@@ -98,24 +93,24 @@ pub async fn record_observation(
 
 #[utoipa::path(
     get,
-    path = "/metrics/selectable",
+    path = "/recipes/selectable",
     tag = "Medical",
     responses(
-        (status = 200, description = "List selectable metrics", body = CommonResponse<ListSelectableMetricsResponse>),
+        (status = 200, description = "List selectable recipes", body = CommonResponse<ListSelectableRecipesResponse>),
     )
 )]
-pub async fn list_selectable_metrics() -> ResponseResult<ListSelectableMetricsResponse> {
+pub async fn list_selectable_recipes() -> ResponseResult<ListSelectableRecipesResponse> {
     let api = HealthApi::new(get_default_ctx());
 
-    let metrics = api.list_selectable_metrics().await.map_err(Error::Core)?;
+    let recipes = api.list_selectable_recipes().await.map_err(Error::Core)?;
 
-    let resp = ListSelectableMetricsResponse {
-        metrics: metrics
+    let resp = ListSelectableRecipesResponse {
+        recipes: recipes
             .into_iter()
-            .map(|m| SelectableMetricDto {
-                id: m.id.0,
-                name: m.name,
-                unit: m.unit,
+            .map(|r| SelectableRecipeDto {
+                id: r.id,
+                name: r.metric_name,
+                unit: r.unit,
             })
             .collect(),
     };
@@ -135,8 +130,8 @@ pub async fn list_selectable_metrics() -> ResponseResult<ListSelectableMetricsRe
 pub async fn upload_markdown_data_source(
     Json(req): Json<UploadMarkdownRequest>,
 ) -> ResponseResult<UploadMarkdownResponse> {
-    use pg_tables::table::data_source::service::DataSourceService;
     use demo_db::DataSourceKind;
+    use pg_tables::table::data_source::service::DataSourceService;
 
     if req.file_content.is_empty() {
         return Err(Error::Custom("No file content provided".to_string()))?;
@@ -161,7 +156,8 @@ pub async fn upload_markdown_data_source(
     })?;
 
     let now = OffsetDateTime::now_utc();
-    let created_at = now.to_offset(time::UtcOffset::UTC)
+    let created_at = now
+        .to_offset(time::UtcOffset::UTC)
         .format(&time::format_description::well_known::Rfc3339)
         .unwrap_or_else(|_| "invalid datetime".to_string());
 
@@ -188,17 +184,18 @@ pub async fn upload_markdown_data_source(
 pub async fn extract_health_metrics(
     Json(req): Json<ExtractHealthMetricsRequest>,
 ) -> ResponseResult<ExtractHealthMetricsResponse> {
-    use pg_tables::table::data_source::service::DataSourceService;
     use demo_db::DataSourceKind;
+    use pg_tables::table::data_source::service::DataSourceService;
     use serde_json::Value as JsonValue;
 
     // 获取 LLM 配置
     let config = crate::statics::llm_client::get_llm_config();
 
     // 使用 LLM 提取医疗指标
-    let extracted_json = extract_health_metrics_with_llm(&req.content, &config.base_url, &config.model)
-        .await
-        .map_err(|e| Error::Custom(format!("Failed to extract metrics with LLM: {}", e)))?;
+    let extracted_json =
+        extract_health_metrics_with_llm(&req.content, &config.base_url, &config.model)
+            .await
+            .map_err(|e| Error::Custom(format!("Failed to extract metrics with LLM: {}", e)))?;
 
     // 解析提取的数据
     let patient_info = extracted_json
@@ -275,16 +272,21 @@ pub async fn extract_health_metrics(
     // 将提取的指标插入到数据库
     for metric in &metrics {
         // 尝试匹配指标代码到数据库中的指标
-        if let Ok(metrics_list) = api.list_selectable_metrics().await {
-            for db_metric in metrics_list {
-                // 简单的匹配逻辑：如果指标代码部分匹配
-                let metric_lower = metric.metric_code.to_lowercase();
-                let db_metric_lower = db_metric.name.to_lowercase();
+        if let Ok(recipes_list) = api.list_selectable_recipes().await {
+            for db_recipe in recipes_list {
+                let Some(recipe_code) = db_recipe.metric_code.as_ref() else {
+                    continue;
+                };
 
-                if metric_lower.contains(&db_metric_lower) || db_metric_lower.contains(&metric_lower) {
+                let metric_lower = metric.metric_code.to_lowercase();
+                let recipe_code_lower = recipe_code.as_ref().to_lowercase();
+
+                if metric_lower.contains(&recipe_code_lower)
+                    || recipe_code_lower.contains(&metric_lower)
+                {
                     let obs_req = RecordObservationWithSourceRequest {
                         subject_id: demo_db::SubjectId(req.subject_id),
-                        metric_id: db_metric.id,
+                        recipe_id: demo_db::RecipeId(db_recipe.id),
                         value: demo_db::ObservationValue(metric.value.clone()),
                         observed_at: OffsetDateTime::now_utc(),
                         source: demo_db::CreateDataSource {

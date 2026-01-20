@@ -9,7 +9,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub observation_id: i64,
     pub subject_id: i64,
-    pub metric_id: i64,
+    pub recipe_id: i64,
     pub value: String,
     pub observed_at: TimeDateTimeWithTimeZone,
     pub recorded_at: TimeDateTimeWithTimeZone,
@@ -19,18 +19,18 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::metric::Entity",
-        from = "Column::MetricId",
-        to = "super::metric::Column::MetricId",
+        belongs_to = "super::recipe::Entity",
+        from = "Column::RecipeId",
+        to = "super::recipe::Column::RecipeId",
         on_update = "Cascade",
         on_delete = "Restrict"
     )]
-    Metric,
+    Recipe,
 }
 
-impl Related<super::metric::Entity> for Entity {
+impl Related<super::recipe::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Metric.def()
+        Relation::Recipe.def()
     }
 }
 

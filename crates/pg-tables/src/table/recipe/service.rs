@@ -5,7 +5,10 @@ use time::OffsetDateTime;
 use crate::{
     Repository, Result,
     entity::recipe,
-    table::recipe::dto::{CreateRecipe, QueryRecipe, Recipe},
+    table::{
+        metric::dto::{MetricCode, MetricStatus, MetricValueType, MetricVisualization},
+        recipe::dto::{CreateRecipe, QueryRecipe, Recipe, RecipeKind},
+    },
 };
 
 impl_repository!(RecipeRepo, recipe::Entity, recipe::Model);
@@ -28,11 +31,17 @@ impl RecipeService {
         let now = OffsetDateTime::now_utc();
 
         let active = recipe::ActiveModel {
-            output_metric_id: Set(input.output_metric_id),
+            kind: Set(input.kind.to_string()),
             deps: Set(input.deps),
             calc_key: Set(input.calc_key),
             arg_map: Set(input.arg_map),
             expr: Set(input.expr),
+            metric_code: Set(input.metric_code.map(|code| code.0)),
+            metric_name: Set(input.metric_name),
+            unit: Set(input.unit),
+            value_type: Set(input.value_type.map(|value| value.to_string())),
+            visualization: Set(input.visualization.map(|value| value.to_string())),
+            status: Set(input.status.to_string()),
             created_at: Set(now),
             ..Default::default()
         };
@@ -56,8 +65,8 @@ impl RecipeService {
         let mut condition = Condition::all();
         let mut has_condition = false;
 
-        if let Some(output_metric_id) = input.output_metric_id {
-            condition = condition.add(recipe::Column::OutputMetricId.eq(output_metric_id));
+        if let Some(kind) = input.kind {
+            condition = condition.add(recipe::Column::Kind.eq(kind.to_string()));
             has_condition = true;
         }
         if let Some(calc_key) = input.calc_key {
@@ -76,12 +85,18 @@ impl RecipeService {
 
     fn from_model(model: recipe::Model) -> Recipe {
         Recipe {
-            id: model.id,
-            output_metric_id: model.output_metric_id,
+            id: model.recipe_id,
+            kind: RecipeKind::from(model.kind),
             deps: model.deps,
             calc_key: model.calc_key,
             arg_map: model.arg_map,
             expr: model.expr,
+            metric_code: model.metric_code.map(MetricCode),
+            metric_name: model.metric_name,
+            unit: model.unit,
+            value_type: model.value_type.map(MetricValueType::from),
+            visualization: model.visualization.map(MetricVisualization::from),
+            status: model.status.into(),
             created_at: model.created_at,
         }
     }

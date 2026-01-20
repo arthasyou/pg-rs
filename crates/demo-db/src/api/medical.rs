@@ -2,11 +2,11 @@ use pg_tables::{
     pg_core::DbContext,
     table::{
         data_source::{dto::DataSourceId, service::DataSourceService},
-        metric::{dto::Metric, service::MetricService},
         observation::{
             dto::{ObservationQueryKey, RecordObservation},
             service::ObservationService,
         },
+        recipe::service::RecipeService,
         subject::service::SubjectService,
     },
 };
@@ -25,7 +25,7 @@ use crate::{
 
 pub struct HealthApi {
     subject: SubjectService,
-    metric: MetricService,
+    recipe: RecipeService,
     observation: ObservationService,
     data_source: DataSourceService,
 }
@@ -34,7 +34,7 @@ impl HealthApi {
     pub fn new(db: DbContext) -> Self {
         Self {
             subject: SubjectService::new(db.clone()),
-            metric: MetricService::new(db.clone()),
+            recipe: RecipeService::new(db.clone()),
             observation: ObservationService::new(db.clone()),
             data_source: DataSourceService::new(db),
         }
@@ -50,16 +50,13 @@ impl HealthApi {
             .then(|| ())
             .ok_or_else(|| Error::not_found("subject", req.subject_id.0))?;
 
-        // 2. metric 必须存在
-        self.metric
-            .get(req.metric_id)
-            .await?
-            .ok_or_else(|| Error::not_found("metric", req.metric_id.0))?;
+        // 2. recipe 必须存在
+        self.recipe.get(req.recipe_id.0).await?;
 
         // 3. 组装 pg-tables 的 RecordObservation DTO
         let input = RecordObservation {
             subject_id: req.subject_id,
-            metric_id: req.metric_id,
+            recipe_id: req.recipe_id,
             value: req.value,
             observed_at: req.observed_at,
             source_id: req.source.map(|_| DataSourceId(0)), // demo：真实系统这里应做 source 映射
@@ -85,11 +82,8 @@ impl HealthApi {
             .then(|| ())
             .ok_or_else(|| Error::not_found("subject", req.subject_id.0))?;
 
-        // 2. metric 必须存在
-        self.metric
-            .get(req.metric_id)
-            .await?
-            .ok_or_else(|| Error::not_found("metric", req.metric_id.0))?;
+        // 2. recipe 必须存在
+        self.recipe.get(req.recipe_id.0).await?;
 
         // 3. 创建 data_source
         let data_source = self.data_source.create(req.source).await?;
@@ -97,7 +91,7 @@ impl HealthApi {
         // 4. 插入 observation
         let input = RecordObservation {
             subject_id: req.subject_id,
-            metric_id: req.metric_id,
+            recipe_id: req.recipe_id,
             value: req.value,
             observed_at: req.observed_at,
             source_id: Some(data_source.id),
@@ -115,15 +109,11 @@ impl HealthApi {
         query: QueryObservationSeries,
         range: Range<OffsetDateTime>,
     ) -> Result<ObservationQueryResult> {
-        let metric = self
-            .metric
-            .get(query.metric_id.into())
-            .await?
-            .ok_or(Error::db_not_found("metric"))?;
+        let recipe = self.recipe.get(query.recipe_id.0).await?;
 
         let key = ObservationQueryKey {
             subject_id: query.subject_id.into(),
-            metric_id: query.metric_id.into(),
+            recipe_id: query.recipe_id.into(),
         };
 
         let points = self
@@ -131,10 +121,14 @@ impl HealthApi {
             .query_observation(key, range.into())
             .await?;
 
-        Ok(ObservationQueryResult { metric, points })
+        Ok(ObservationQueryResult { recipe, points })
     }
 
-    pub async fn list_selectable_metrics(&self) -> Result<Vec<Metric>> {
-        self.metric.list_selectable().await
+    pub async fn list_selectable_recipes(&self) -> Result<Vec<crate::dto::recipe::RecipeResponse>> {
+        let req = pg_tables::table::recipe::dto::QueryRecipe {
+            kind: Some(pg_tables::table::recipe::dto::RecipeKind::Derived),
+            calc_key: None,
+        };
+        self.recipe.list(req).await
     }
 }

@@ -1,5 +1,7 @@
 use core::fmt;
 
+use serde::{Deserialize, Serialize};
+
 use time::OffsetDateTime;
 
 use crate::table::observation::dto::ObservationValue;
@@ -31,9 +33,6 @@ pub struct Metric {
     pub value_type: MetricValueType,
 
     pub visualization: MetricVisualization,
-
-    /// 指标当前状态
-    pub status: MetricStatus,
 
     /// 创建时间（审计用途）
     pub created_at: OffsetDateTime,
@@ -67,7 +66,6 @@ pub struct CreateMetric {
 /// 查询 Metric 的输入参数
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ListMetric {
-    pub status: Option<MetricStatus>,
     pub value_type: Option<MetricValueType>,
 }
 
@@ -91,7 +89,8 @@ impl From<MetricId> for i64 {
 ///
 /// 使用新类型而不是 String，
 /// 是为了在 domain 中避免“裸字符串”横飞
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct MetricCode(pub String);
 impl AsRef<str> for MetricCode {
     fn as_ref(&self) -> &str {
@@ -144,6 +143,25 @@ impl fmt::Display for MetricValueType {
     }
 }
 
+impl Serialize for MetricValueType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for MetricValueType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        Ok(MetricValueType::from(value))
+    }
+}
+
 impl From<&str> for MetricValueType {
     fn from(value: &str) -> Self {
         match value {
@@ -188,6 +206,25 @@ impl fmt::Display for MetricVisualization {
     }
 }
 
+impl Serialize for MetricVisualization {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for MetricVisualization {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        Ok(MetricVisualization::from(value))
+    }
+}
+
 impl From<&str> for MetricVisualization {
     fn from(value: &str) -> Self {
         match value {
@@ -219,6 +256,25 @@ impl fmt::Display for MetricStatus {
     }
 }
 
+impl Serialize for MetricStatus {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for MetricStatus {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        Ok(MetricStatus::from(value))
+    }
+}
+
 impl From<&str> for MetricStatus {
     fn from(value: &str) -> Self {
         match value {
@@ -238,12 +294,5 @@ impl From<&str> for MetricStatus {
 impl From<String> for MetricStatus {
     fn from(value: String) -> Self {
         MetricStatus::from(value.as_str())
-    }
-}
-
-impl Metric {
-    /// 判断该指标是否仍然可用于新观测
-    pub fn is_active(&self) -> bool {
-        matches!(self.status, MetricStatus::Active)
     }
 }

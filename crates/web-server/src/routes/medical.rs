@@ -4,12 +4,12 @@ use utoipa::OpenApi;
 
 use crate::{
     dto::medical::{
-        ListSelectableMetricsResponse, MetricDto, ObservationPointDto, QueryObservationRequest,
+        ListSelectableRecipesResponse, ObservationPointDto, QueryObservationRequest,
         QueryObservationResponse, RecordObservationRequest, RecordObservationResponse,
-        SelectableMetricDto, SourceInput, UploadMarkdownRequest, UploadMarkdownResponse,
+        RecipeDto, SelectableRecipeDto, SourceInput, UploadMarkdownRequest, UploadMarkdownResponse,
         ExtractHealthMetricsRequest, ExtractHealthMetricsResponse, HealthMetric, ExtractedHealthData,
     },
-    handlers::medical::{list_selectable_metrics, query_observations, record_observation, upload_markdown_data_source, extract_health_metrics},
+    handlers::medical::{list_selectable_recipes, query_observations, record_observation, upload_markdown_data_source, extract_health_metrics},
 };
 
 #[derive(OpenApi)]
@@ -17,7 +17,7 @@ use crate::{
     paths(
         crate::handlers::medical::query_observations,
         crate::handlers::medical::record_observation,
-        crate::handlers::medical::list_selectable_metrics,
+        crate::handlers::medical::list_selectable_recipes,
         crate::handlers::medical::upload_markdown_data_source,
         crate::handlers::medical::extract_health_metrics,
     ),
@@ -25,13 +25,13 @@ use crate::{
         schemas(
             QueryObservationRequest,
             QueryObservationResponse,
-            MetricDto,
+            RecipeDto,
             ObservationPointDto,
             RecordObservationRequest,
             SourceInput,
             RecordObservationResponse,
-            ListSelectableMetricsResponse,
-            SelectableMetricDto,
+            ListSelectableRecipesResponse,
+            SelectableRecipeDto,
             UploadMarkdownRequest,
             UploadMarkdownResponse,
             ExtractHealthMetricsRequest,
@@ -40,7 +40,7 @@ use crate::{
             ExtractedHealthData,
             CommonResponse<QueryObservationResponse>,
             CommonResponse<RecordObservationResponse>,
-            CommonResponse<ListSelectableMetricsResponse>,
+            CommonResponse<ListSelectableRecipesResponse>,
             CommonResponse<UploadMarkdownResponse>,
             CommonResponse<ExtractHealthMetricsResponse>,
             CommonError
@@ -55,7 +55,7 @@ pub struct MedicalApi;
 pub fn medical_routes() -> Router {
     Router::new()
         .route("/observations", get(query_observations).post(record_observation))
-        .route("/metrics/selectable", get(list_selectable_metrics))
+        .route("/recipes/selectable", get(list_selectable_recipes))
         .route("/data-source/markdown", post(upload_markdown_data_source))
         .route("/extract-metrics", post(extract_health_metrics))
 }
