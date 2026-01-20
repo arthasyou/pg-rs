@@ -35,7 +35,7 @@ cd "$PROJECT_ROOT" || exit 1
 #   exit 1
 # fi
 
-# Step 2: migrate refresh（先 reset 再 up）
+Step 2: migrate refresh（先 reset 再 up）
 echo "🔄 执行 migrate refresh ..."
 sea-orm-cli migrate refresh -d "$MIGRATION_DIR"
 if [ $? -ne 0 ]; then

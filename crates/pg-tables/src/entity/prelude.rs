@@ -2,5 +2,5 @@
 
 pub use super::{
     data_source::Entity as DataSource, metric::Entity as Metric,
-    observation::Entity as Observation, subject::Entity as Subject,
+    observation::Entity as Observation, recipe::Entity as Recipe, subject::Entity as Subject,
 };
