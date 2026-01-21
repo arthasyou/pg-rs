@@ -73,11 +73,11 @@ INSERT INTO metric (
 )
 VALUES (
     'calc.tyg',
-    '胰岛素抵抗指数（TyG）',
+    '胰岛素抵抗指数(TyG)',
     NULL,
     'float',
     'line',
-    'Derived'
+    'derived'
 );
 
 
