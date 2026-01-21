@@ -2,41 +2,46 @@ use pg_tables::{
     pg_core::DbContext,
     table::{
         data_source::{dto::DataSourceId, service::DataSourceService},
+        metric::{dto::Metric, service::MetricService},
         observation::{
-            dto::{ObservationQueryKey, RecordObservation},
+            dto::{ObservationPoint, ObservationQueryKey, ObservationValue, RecordObservation},
             service::ObservationService,
         },
-        recipe::service::RecipeService,
-        subject::service::SubjectService,
+        recipe::{dto::RecipeKind, service::RecipeService},
+        subject::{dto::SubjectId, service::SubjectService},
     },
 };
 use time::OffsetDateTime;
 
 use crate::{
     Error, Result,
+    calc::{get_calc, parse_inputs},
     dto::{
         base::Range,
         medical::{
-            ObservationQueryResult, QueryObservationSeries, RecordObservationRequest,
-            RecordObservationResult, RecordObservationWithSourceRequest,
+            ObservationQueryResult, QueryObservationSeries, QueryRecipeObservationRequest,
+            QueryRecipeObservationResponse, RecordObservationRequest, RecordObservationResult,
+            RecordObservationWithSourceRequest,
         },
     },
 };
 
 pub struct HealthApi {
     subject: SubjectService,
-    recipe: RecipeService,
+    metric: MetricService,
     observation: ObservationService,
     data_source: DataSourceService,
+    recipe: RecipeService,
 }
 
 impl HealthApi {
     pub fn new(db: DbContext) -> Self {
         Self {
             subject: SubjectService::new(db.clone()),
-            recipe: RecipeService::new(db.clone()),
+            metric: MetricService::new(db.clone()),
             observation: ObservationService::new(db.clone()),
-            data_source: DataSourceService::new(db),
+            data_source: DataSourceService::new(db.clone()),
+            recipe: RecipeService::new(db),
         }
     }
 }
@@ -50,13 +55,16 @@ impl HealthApi {
             .then(|| ())
             .ok_or_else(|| Error::not_found("subject", req.subject_id.0))?;
 
-        // 2. recipe 必须存在
-        self.recipe.get(req.recipe_id.0).await?;
+        // 2. metric 必须存在
+        self.metric
+            .get(req.metric_id)
+            .await?
+            .ok_or_else(|| Error::not_found("metric", req.metric_id.0))?;
 
         // 3. 组装 pg-tables 的 RecordObservation DTO
         let input = RecordObservation {
             subject_id: req.subject_id,
-            recipe_id: req.recipe_id,
+            metric_id: req.metric_id,
             value: req.value,
             observed_at: req.observed_at,
             source_id: req.source.map(|_| DataSourceId(0)), // demo：真实系统这里应做 source 映射
@@ -82,8 +90,11 @@ impl HealthApi {
             .then(|| ())
             .ok_or_else(|| Error::not_found("subject", req.subject_id.0))?;
 
-        // 2. recipe 必须存在
-        self.recipe.get(req.recipe_id.0).await?;
+        // 2. metric 必须存在
+        self.metric
+            .get(req.metric_id)
+            .await?
+            .ok_or_else(|| Error::not_found("metric", req.metric_id.0))?;
 
         // 3. 创建 data_source
         let data_source = self.data_source.create(req.source).await?;
@@ -91,7 +102,7 @@ impl HealthApi {
         // 4. 插入 observation
         let input = RecordObservation {
             subject_id: req.subject_id,
-            recipe_id: req.recipe_id,
+            metric_id: req.metric_id,
             value: req.value,
             observed_at: req.observed_at,
             source_id: Some(data_source.id),
@@ -109,11 +120,15 @@ impl HealthApi {
         query: QueryObservationSeries,
         range: Range<OffsetDateTime>,
     ) -> Result<ObservationQueryResult> {
-        let recipe = self.recipe.get(query.recipe_id.0).await?;
+        let metric = self
+            .metric
+            .get(query.metric_id.into())
+            .await?
+            .ok_or(Error::db_not_found("metric"))?;
 
         let key = ObservationQueryKey {
             subject_id: query.subject_id.into(),
-            recipe_id: query.recipe_id.into(),
+            metric_id: query.metric_id.into(),
         };
 
         let points = self
@@ -121,14 +136,77 @@ impl HealthApi {
             .query_observation(key, range.into())
             .await?;
 
-        Ok(ObservationQueryResult { recipe, points })
+        Ok(ObservationQueryResult { metric, points })
     }
 
-    pub async fn list_selectable_recipes(&self) -> Result<Vec<crate::dto::recipe::RecipeResponse>> {
-        let req = pg_tables::table::recipe::dto::QueryRecipe {
-            kind: Some(pg_tables::table::recipe::dto::RecipeKind::Derived),
-            calc_key: None,
-        };
-        self.recipe.list(req).await
+    pub async fn list_selectable_metrics(&self) -> Result<Vec<Metric>> {
+        self.metric.list_selectable().await
+    }
+
+    pub async fn query_composite_metric(
+        &self,
+        req: QueryRecipeObservationRequest,
+        range: Range<OffsetDateTime>,
+    ) -> Result<QueryRecipeObservationResponse> {
+        let recipe = self.recipe.get(req.recipe_id.0).await?;
+
+        let deps_raw: Vec<i64> = serde_json::from_value(recipe.deps.clone())
+            .map_err(|_| Error::internal("invalid deps for recipe"))?;
+        let deps = deps_raw
+            .into_iter()
+            .map(pg_tables::table::metric::dto::MetricId)
+            .collect::<Vec<_>>();
+
+        match recipe.kind.clone() {
+            RecipeKind::Primitive => {
+                let metric_id = *deps
+                    .first()
+                    .ok_or(Error::internal("missing deps for primitive recipe"))?;
+                if deps.len() != 1 {
+                    return Err(Error::internal(
+                        "primitive recipe should have exactly one dep",
+                    ));
+                }
+
+                let key = ObservationQueryKey {
+                    subject_id: req.subject_id,
+                    metric_id,
+                };
+
+                let points = self
+                    .observation
+                    .query_observation(key, range.into())
+                    .await?;
+
+                let metric = recipe.into();
+                Ok(QueryRecipeObservationResponse { metric, points })
+            }
+            RecipeKind::Derived => {
+                let calc_key = recipe
+                    .calc_key
+                    .as_deref()
+                    .ok_or(Error::internal("missing calc_key"))?;
+                let calc = get_calc(calc_key).ok_or(Error::internal("unknown calc_key"))?;
+
+                let rows = self
+                    .observation
+                    .query_observation_by_metrics(req.subject_id, deps, range.into())
+                    .await?;
+
+                let mut points = Vec::with_capacity(rows.len());
+                for row in rows {
+                    let inputs = parse_inputs(&row.inputs)?;
+                    let value = calc(&inputs)?;
+                    points.push(ObservationPoint {
+                        value: ObservationValue(value.to_string()),
+                        observed_at: row.observed_at,
+                    });
+                }
+
+                let metric = recipe.into();
+
+                Ok(QueryRecipeObservationResponse { metric, points })
+            }
+        }
     }
 }

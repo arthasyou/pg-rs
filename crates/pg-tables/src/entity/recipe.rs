@@ -16,25 +16,16 @@ pub struct Model {
     pub arg_map: Option<Json>,
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub expr: Option<Json>,
-    pub metric_code: Option<String>,
-    pub metric_name: Option<String>,
-    pub unit: Option<String>,
-    pub value_type: Option<String>,
-    pub visualization: Option<String>,
+    pub metric_code: String,
+    pub metric_name: String,
+    pub unit: String,
+    pub value_type: String,
+    pub visualization: String,
     pub status: String,
     pub created_at: TimeDateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(has_many = "super::observation::Entity")]
-    Observation,
-}
-
-impl Related<super::observation::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Observation.def()
-    }
-}
+pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}

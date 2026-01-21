@@ -64,7 +64,7 @@
 请求参数放在 query string：
 
 - `subject_id`：`i64`（必填）
-- `recipe_id`：`i64`（必填）
+- `metric_id`：`i64`（必填）
 - `start_at`：RFC3339 时间字符串（可选），建议使用 UTC（`Z`）避免 query 里 `+` 号编码问题
 - `end_at`：RFC3339 时间字符串（可选），建议使用 UTC（`Z`）避免 query 里 `+` 号编码问题
 
@@ -80,15 +80,12 @@
 ```json
 {
   "subject_id": 1,
-  "recipe": {
+  "metric": {
     "id": 1,
-    "kind": "primitive | derived",
-    "metric_code": "string | null",
-    "metric_name": "string | null",
+    "code": "string",
+    "name": "string",
     "unit": "string | null",
-    "value_type": "int | float | decimal | bool | text | null",
-    "visualization": "line_chart | bar_chart | value_list | single_value | null",
-    "status": "active | deprecated | null"
+    "vazualization": "line_chart | bar_chart | value_list | single_value"
   },
   "points": [
     {
@@ -104,14 +101,14 @@
 
 - `points` 默认按 `observed_at` **升序**返回（来自 DB 查询排序）
 - `value` 永远是字符串；`value_num` 是服务端尝试把 `value` 转为数值后的结果（转不了则为 `null`）
-- `recipe.visualization` 表示指标的可视化类型：`line_chart` / `bar_chart` / `value_list` / `single_value`
+- `metric.vazualization` 表示指标的可视化类型：`line_chart` / `bar_chart` / `value_list` / `single_value`
 
 #### RecordObservationRequest
 
 ```json
 {
   "subject_id": 1,
-  "recipe_id": 1,
+  "metric_id": 1,
   "value": "string",
   "observed_at": "RFC3339 string (UTC), e.g. 2025-12-30T10:02:43.893518Z",
   "source": {
@@ -134,13 +131,13 @@
 }
 ```
 
-#### ListSelectableRecipesResponse
+#### ListSelectableMetricsResponse
 
-用途：前端下拉框的 recipe 选项列表（只返回必要字段）。
+用途：前端下拉框的 metric 选项列表（只返回必要字段）。
 
 ```json
 {
-  "recipes": [
+  "metrics": [
     {
       "id": 1,
       "name": "string",
@@ -158,12 +155,12 @@ Base path：`/medical`
 
 #### 5.1.1 GET `/medical/observations`
 
-用途：查询某个 subject + recipe 的时间序列观测点。
+用途：查询某个 subject + metric 的时间序列观测点。
 
 - Auth：无
 - Query Params：`QueryObservationRequest`
   - `subject_id`：必填
-  - `recipe_id`：必填
+  - `metric_id`：必填
   - `start_at`：可选，RFC3339（建议 UTC `Z`）
   - `end_at`：可选，RFC3339（建议 UTC `Z`）
 - Success Response：`CommonResponse<QueryObservationResponse>`
@@ -171,7 +168,7 @@ Base path：`/medical`
 示例：
 
 ```bash
-curl "http://localhost:19878/medical/observations?subject_id=1&recipe_id=1&start_at=2025-12-30T10:02:43.893518Z&end_at=2025-12-31T10:02:43.893518Z"
+curl "http://localhost:19878/medical/observations?subject_id=1&metric_id=1&start_at=2025-12-30T10:02:43.893518Z&end_at=2025-12-31T10:02:43.893518Z"
 ```
 
 #### 5.1.2 POST `/medical/observations`
@@ -189,7 +186,7 @@ curl -X POST http://localhost:19878/medical/observations \
   -H 'Content-Type: application/json' \
   -d '{
     "subject_id": 1,
-    "recipe_id": 1,
+    "metric_id": 1,
     "value": "120",
     "observed_at": "2025-12-30T10:02:43.893518Z",
     "source": {
@@ -200,17 +197,17 @@ curl -X POST http://localhost:19878/medical/observations \
   }'
 ```
 
-#### 5.1.3 GET `/medical/recipes/selectable`
+#### 5.1.3 GET `/medical/metrics/selectable`
 
-用途：获取可用于选择的 recipe 列表（给前端下拉框用）。
+用途：获取可用于选择的 metric 列表（给前端下拉框用）。
 
 - Auth：无
-- Success Response：`CommonResponse<ListSelectableRecipesResponse>`
+- Success Response：`CommonResponse<ListSelectableMetricsResponse>`
 
 示例：
 
 ```bash
-curl "http://localhost:19878/medical/recipes/selectable"
+curl "http://localhost:19878/medical/metrics/selectable"
 ```
 
 ## 6. TypeScript 类型（建议直接复用）
@@ -230,20 +227,17 @@ export interface CommonError {
 // ---------- Medical ----------
 export interface QueryObservationRequest {
   subject_id: number;
-  recipe_id: number;
+  metric_id: number;
   start_at?: string;
   end_at?: string;
 }
 
-export interface RecipeDto {
+export interface MetricDto {
   id: number;
-  kind: string; // primitive | derived
-  metric_code?: string | null;
-  metric_name?: string | null;
+  code: string;
+  name: string;
   unit?: string | null;
-  value_type?: string | null; // int | float | decimal | bool | text
-  visualization?: string | null; // line_chart | bar_chart | value_list | single_value
-  status?: string | null; // active | deprecated
+  vazualization: string; // line_chart | bar_chart | value_list | single_value
 }
 
 export interface ObservationPointDto {
@@ -254,7 +248,7 @@ export interface ObservationPointDto {
 
 export interface QueryObservationResponse {
   subject_id: number;
-  recipe: RecipeDto;
+  metric: MetricDto;
   points: ObservationPointDto[];
 }
 
@@ -266,7 +260,7 @@ export interface SourceInput {
 
 export interface RecordObservationRequest {
   subject_id: number;
-  recipe_id: number;
+  metric_id: number;
   value: string;
   observed_at: string; // RFC3339 (UTC recommended), e.g. 2025-12-30T10:02:43.893518Z
   source: SourceInput;
@@ -277,14 +271,14 @@ export interface RecordObservationResponse {
   source_id: number;
 }
 
-export interface SelectableRecipeDto {
+export interface SelectableMetricDto {
   id: number;
-  name?: string | null;
+  name: string;
   unit?: string | null;
 }
 
-export interface ListSelectableRecipesResponse {
-  recipes: SelectableRecipeDto[];
+export interface ListSelectableMetricsResponse {
+  metrics: SelectableMetricDto[];
 }
 ```
 

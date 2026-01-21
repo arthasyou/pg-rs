@@ -1,11 +1,11 @@
 use demo_db::{
-    CreateDataSource, DataSourceKind, ObservationValue, RecipeId, SubjectId,
+    CreateDataSource, DataSourceKind, MetricId, ObservationValue, SubjectId,
     dto::{
         base::Range,
         medical::{ObservationQueryResult, QueryObservationSeries},
     },
 };
-use pg_tables::table::metric::dto::MetricValueType;
+use pg_tables::table::recipe::dto::RecipeId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use time::{OffsetDateTime, UtcOffset};
@@ -24,26 +24,26 @@ fn parse_rfc3339(input: &str) -> Result<OffsetDateTime> {
     Ok(dt.to_offset(UtcOffset::UTC))
 }
 
-fn format_rfc3339_utc(dt: OffsetDateTime) -> String {
+pub fn format_rfc3339_utc(dt: OffsetDateTime) -> String {
     dt.to_offset(UtcOffset::UTC)
         .format(&time::format_description::well_known::Rfc3339)
         .unwrap_or_else(|_| "invalid datetime".to_string())
 }
 
 // =========================
-// List Selectable Recipes
+// List Selectable Metrics
 // =========================
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct ListSelectableRecipesResponse {
-    pub recipes: Vec<SelectableRecipeDto>,
+pub struct ListSelectableMetricsResponse {
+    pub metrics: Vec<SelectableMetricDto>,
 }
 
 /// 前端下拉框选项（仅保留必要字段）
 #[derive(Debug, Serialize, ToSchema)]
-pub struct SelectableRecipeDto {
+pub struct SelectableMetricDto {
     pub id: i64,
-    pub name: Option<String>,
+    pub name: String,
     pub unit: Option<String>,
 }
 
@@ -56,8 +56,8 @@ pub struct QueryObservationRequest {
     /// subject 全局 ID（web 层用裸 i64）
     pub subject_id: i64,
 
-    /// recipe 全局 ID
-    pub recipe_id: i64,
+    /// metric 全局 ID
+    pub metric_id: i64,
 
     /// 查询起始时间（RFC3339, 例如：2025-12-30T10:02:43.893518Z）
     pub start_at: Option<String>,
@@ -85,7 +85,7 @@ impl QueryObservationRequest {
 
         let query = QueryObservationSeries {
             subject_id: self.subject_id.into(),
-            recipe_id: self.recipe_id.into(),
+            metric_id: self.metric_id.into(),
         };
 
         Ok((query, range))
@@ -95,13 +95,12 @@ impl QueryObservationRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct QueryObservationResponse {
     pub subject_id: i64,
-    pub recipe: RecipeDto,
+    pub metric: MetricDto,
     pub points: Vec<ObservationPointDto>,
 }
 
 impl From<(i64, ObservationQueryResult)> for QueryObservationResponse {
     fn from((subject_id, v): (i64, ObservationQueryResult)) -> Self {
-        let value_type = v.recipe.value_type.clone();
         Self {
             subject_id,
             points: v
@@ -109,34 +108,28 @@ impl From<(i64, ObservationQueryResult)> for QueryObservationResponse {
                 .into_iter()
                 .map(|p| ObservationPointDto {
                     value: p.value.as_str().to_string(),
-                    value_num: try_parse_numeric(&p.value, value_type.clone()),
+                    value_num: v.metric.try_parse_numeric(&p.value),
                     observed_at: format_rfc3339_utc(p.observed_at),
                 })
                 .collect(),
-            recipe: RecipeDto {
-                id: v.recipe.id,
-                kind: v.recipe.kind.to_string(),
-                metric_code: v.recipe.metric_code.map(|code| code.0),
-                metric_name: v.recipe.metric_name,
-                unit: v.recipe.unit,
-                value_type: v.recipe.value_type.map(|v| v.to_string()),
-                visualization: v.recipe.visualization.map(|v| v.to_string()),
-                status: v.recipe.status.to_string(),
+            metric: MetricDto {
+                id: v.metric.id.0,
+                code: v.metric.code.as_ref().to_string(),
+                name: v.metric.name,
+                unit: v.metric.unit,
+                vazualization: v.metric.visualization.to_string(),
             },
         }
     }
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct RecipeDto {
+pub struct MetricDto {
     pub id: i64,
-    pub kind: String,
-    pub metric_code: Option<String>,
-    pub metric_name: Option<String>,
+    pub code: String,
+    pub name: String,
     pub unit: Option<String>,
-    pub value_type: Option<String>,
-    pub visualization: Option<String>,
-    pub status: String,
+    pub vazualization: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -156,8 +149,8 @@ pub struct RecordObservationRequest {
     /// subject 全局 ID
     pub subject_id: i64,
 
-    /// recipe 全局 ID
-    pub recipe_id: i64,
+    /// metric 全局 ID
+    pub metric_id: i64,
 
     /// 观测值
     pub value: String,
@@ -186,7 +179,7 @@ impl RecordObservationRequest {
         self,
     ) -> Result<(
         SubjectId,
-        RecipeId,
+        MetricId,
         ObservationValue,
         OffsetDateTime,
         CreateDataSource,
@@ -201,7 +194,7 @@ impl RecordObservationRequest {
 
         Ok((
             SubjectId(self.subject_id),
-            RecipeId(self.recipe_id),
+            MetricId(self.metric_id),
             ObservationValue(self.value),
             observed_at,
             source,
@@ -213,6 +206,70 @@ impl RecordObservationRequest {
 pub struct RecordObservationResponse {
     pub observation_id: i64,
     pub source_id: i64,
+}
+
+// =========================
+// Query Composite Metric
+// =========================
+
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
+pub struct QueryRecipeObservationRequest {
+    /// subject 全局 ID（web 层用裸 i64）
+    pub subject_id: i64,
+
+    /// recipe 全局 ID
+    pub recipe_id: i64,
+
+    /// 查询起始时间（RFC3339, 例如：2025-12-30T10:02:43.893518Z）
+    pub start_at: Option<String>,
+
+    /// 查询结束时间（RFC3339, 例如：2025-12-30T10:02:43.893518Z）
+    pub end_at: Option<String>,
+}
+
+impl QueryRecipeObservationRequest {
+    pub fn to_internal(
+        self,
+    ) -> Result<(demo_db::dto::medical::QueryRecipeObservationRequest, Range<OffsetDateTime>)> {
+        let start = match self.start_at {
+            Some(ref s) => parse_rfc3339(s)?,
+            None => OffsetDateTime::from_unix_timestamp(0).unwrap(),
+        };
+
+        let end = match self.end_at {
+            Some(ref s) => parse_rfc3339(s)?,
+            None => OffsetDateTime::now_utc(),
+        };
+
+        let range = Range {
+            from: Some(start),
+            to: Some(end),
+        };
+
+        let query = demo_db::dto::medical::QueryRecipeObservationRequest {
+            subject_id: self.subject_id.into(),
+            recipe_id: RecipeId(self.recipe_id),
+        };
+
+        Ok((query, range))
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct QueryRecipeObservationResponse {
+    pub subject_id: i64,
+    pub metric: RecipeSummaryDto,
+    pub points: Vec<ObservationPointDto>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct RecipeSummaryDto {
+    pub id: i64,
+    pub metric_code: String,
+    pub metric_name: String,
+    pub unit: String,
+    pub value_type: String,
+    pub visualization: String,
 }
 
 // =========================
@@ -309,13 +366,4 @@ pub struct ExtractHealthMetricsResponse {
 
     /// 插入的观测记录数
     pub records_inserted: usize,
-}
-
-fn try_parse_numeric(value: &ObservationValue, value_type: Option<MetricValueType>) -> Option<f64> {
-    match value_type {
-        Some(MetricValueType::Integer)
-        | Some(MetricValueType::Float)
-        | Some(MetricValueType::Decimal) => value.try_parse_f64(),
-        _ => None,
-    }
 }

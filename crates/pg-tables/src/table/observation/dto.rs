@@ -3,7 +3,7 @@
 use time::OffsetDateTime;
 
 use crate::table::{
-    data_source::dto::DataSourceId, recipe::dto::RecipeId, subject::dto::SubjectId,
+    data_source::dto::DataSourceId, metric::dto::MetricId, subject::dto::SubjectId,
 };
 
 /// Observation 表示：
@@ -20,12 +20,12 @@ pub struct Observation {
     /// 观测主体（关于谁）
     pub subject_id: SubjectId,
 
-    /// 被观测的配方（观测的是什么）
-    pub recipe_id: RecipeId,
+    /// 被观测的指标（观测的是什么）
+    pub metric_id: MetricId,
 
     /// 观测值（统一用字符串承载）
     ///
-    /// 语义解释必须结合 Recipe.value_type
+    /// 语义解释必须结合 Metric.value_type
     pub value: ObservationValue,
 
     /// 事实发生时间（设备时间 / 业务时间）
@@ -42,7 +42,7 @@ pub struct Observation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordObservation {
     pub subject_id: SubjectId,
-    pub recipe_id: RecipeId,
+    pub metric_id: MetricId,
     pub value: ObservationValue,
     pub observed_at: OffsetDateTime,
     pub source_id: Option<DataSourceId>,
@@ -51,13 +51,32 @@ pub struct RecordObservation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservationQueryKey {
     pub subject_id: SubjectId,
-    pub recipe_id: RecipeId,
+    pub metric_id: MetricId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservationPoint {
     pub value: ObservationValue,
     pub observed_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObservationPointWithMetric {
+    pub metric_id: MetricId,
+    pub value: ObservationValue,
+    pub observed_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObservationTimeGroup {
+    pub observed_at: OffsetDateTime,
+    pub points: Vec<ObservationPointWithMetric>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ObservationInputs {
+    pub observed_at: OffsetDateTime,
+    pub inputs: serde_json::Value,
 }
 
 /// Observation 的强类型 ID

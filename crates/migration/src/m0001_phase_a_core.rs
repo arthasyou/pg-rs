@@ -152,7 +152,7 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(
-                        ColumnDef::new(Observation::RecipeId)
+                        ColumnDef::new(Observation::MetricId)
                             .big_integer()
                             .not_null(),
                     )
@@ -161,7 +161,7 @@ impl MigrationTrait for Migration {
                             .string()
                             .not_null()
                             .comment(
-                                "Value stored as string, parsed according to recipe.value_type",
+                                "Value stored as string, parsed according to metric.value_type",
                             ),
                     )
                     .col(
@@ -183,6 +183,14 @@ impl MigrationTrait for Migration {
                             .null()
                             .comment("Optional reference to data source"),
                     )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_observation_metric")
+                            .from(Observation::Table, Observation::MetricId)
+                            .to(Metric::Table, Metric::MetricId)
+                            .on_delete(ForeignKeyAction::Restrict)
+                            .on_update(ForeignKeyAction::Cascade),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -191,10 +199,10 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .name("idx_observation_subject_recipe")
+                    .name("idx_observation_subject_metric")
                     .table(Observation::Table)
                     .col(Observation::SubjectId)
-                    .col(Observation::RecipeId)
+                    .col(Observation::MetricId)
                     .to_owned(),
             )
             .await?;
@@ -270,7 +278,7 @@ enum Observation {
     Table,
     ObservationId,
     SubjectId,
-    RecipeId,
+    MetricId,
     Value,
     ObservedAt,
     RecordedAt,

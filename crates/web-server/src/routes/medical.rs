@@ -4,20 +4,25 @@ use utoipa::OpenApi;
 
 use crate::{
     dto::medical::{
-        ListSelectableRecipesResponse, ObservationPointDto, QueryObservationRequest,
-        QueryObservationResponse, RecordObservationRequest, RecordObservationResponse,
-        RecipeDto, SelectableRecipeDto, SourceInput, UploadMarkdownRequest, UploadMarkdownResponse,
-        ExtractHealthMetricsRequest, ExtractHealthMetricsResponse, HealthMetric, ExtractedHealthData,
+        ListSelectableMetricsResponse, ObservationPointDto, QueryObservationRequest,
+        QueryObservationResponse, QueryRecipeObservationRequest, QueryRecipeObservationResponse,
+        RecordObservationRequest, RecordObservationResponse, MetricDto, SelectableMetricDto,
+        SourceInput, UploadMarkdownRequest, UploadMarkdownResponse, ExtractHealthMetricsRequest,
+        ExtractHealthMetricsResponse, HealthMetric, ExtractedHealthData, RecipeSummaryDto,
     },
-    handlers::medical::{list_selectable_recipes, query_observations, record_observation, upload_markdown_data_source, extract_health_metrics},
+    handlers::medical::{
+        list_selectable_metrics, query_observations, query_recipe_observations, record_observation,
+        upload_markdown_data_source, extract_health_metrics,
+    },
 };
 
 #[derive(OpenApi)]
 #[openapi(
     paths(
         crate::handlers::medical::query_observations,
+        crate::handlers::medical::query_recipe_observations,
         crate::handlers::medical::record_observation,
-        crate::handlers::medical::list_selectable_recipes,
+        crate::handlers::medical::list_selectable_metrics,
         crate::handlers::medical::upload_markdown_data_source,
         crate::handlers::medical::extract_health_metrics,
     ),
@@ -25,13 +30,16 @@ use crate::{
         schemas(
             QueryObservationRequest,
             QueryObservationResponse,
-            RecipeDto,
+            QueryRecipeObservationRequest,
+            QueryRecipeObservationResponse,
+            MetricDto,
             ObservationPointDto,
+            RecipeSummaryDto,
             RecordObservationRequest,
             SourceInput,
             RecordObservationResponse,
-            ListSelectableRecipesResponse,
-            SelectableRecipeDto,
+            ListSelectableMetricsResponse,
+            SelectableMetricDto,
             UploadMarkdownRequest,
             UploadMarkdownResponse,
             ExtractHealthMetricsRequest,
@@ -40,7 +48,7 @@ use crate::{
             ExtractedHealthData,
             CommonResponse<QueryObservationResponse>,
             CommonResponse<RecordObservationResponse>,
-            CommonResponse<ListSelectableRecipesResponse>,
+            CommonResponse<ListSelectableMetricsResponse>,
             CommonResponse<UploadMarkdownResponse>,
             CommonResponse<ExtractHealthMetricsResponse>,
             CommonError
@@ -55,7 +63,8 @@ pub struct MedicalApi;
 pub fn medical_routes() -> Router {
     Router::new()
         .route("/observations", get(query_observations).post(record_observation))
-        .route("/recipes/selectable", get(list_selectable_recipes))
+        .route("/recipes/observations", get(query_recipe_observations))
+        .route("/metrics/selectable", get(list_selectable_metrics))
         .route("/data-source/markdown", post(upload_markdown_data_source))
         .route("/extract-metrics", post(extract_health_metrics))
 }

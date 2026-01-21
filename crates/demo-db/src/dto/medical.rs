@@ -7,8 +7,9 @@
 
 use pg_tables::table::{
     data_source::dto::{CreateDataSource, DataSourceId},
-    recipe::dto::{Recipe, RecipeId},
+    metric::dto::{Metric, MetricId},
     observation::dto::{ObservationId, ObservationPoint, ObservationValue},
+    recipe::dto::{RecipeId, RecipeSummary},
     subject::dto::SubjectId,
 };
 use time::OffsetDateTime;
@@ -20,7 +21,7 @@ use time::OffsetDateTime;
 /// 记录一次健康观测（跨表业务行为）
 pub struct RecordObservationRequest {
     pub subject_id: SubjectId,
-    pub recipe_id: RecipeId,
+    pub metric_id: MetricId,
 
     /// 业务层只关心"数值是什么"
     pub value: ObservationValue,
@@ -35,7 +36,7 @@ pub struct RecordObservationRequest {
 /// 记录一次健康观测（带 source 创建）
 pub struct RecordObservationWithSourceRequest {
     pub subject_id: SubjectId,
-    pub recipe_id: RecipeId,
+    pub metric_id: MetricId,
     pub value: ObservationValue,
     pub observed_at: OffsetDateTime,
     pub source: CreateDataSource,
@@ -44,7 +45,7 @@ pub struct RecordObservationWithSourceRequest {
 /// 查询观测数据
 pub struct QueryObservationSeries {
     pub subject_id: SubjectId,
-    pub recipe_id: RecipeId,
+    pub metric_id: MetricId,
 }
 
 /// =========================
@@ -61,6 +62,17 @@ pub struct RecordObservationResult {
 /// 业务视角的单条观测结果
 #[derive(Debug, Clone)]
 pub struct ObservationQueryResult {
-    pub recipe: Recipe,
+    pub metric: Metric,
+    pub points: Vec<ObservationPoint>,
+}
+
+/// 查询recipe依赖的观测数据
+pub struct QueryRecipeObservationRequest {
+    pub subject_id: SubjectId,
+    pub recipe_id: RecipeId,
+}
+
+pub struct QueryRecipeObservationResponse {
+    pub metric: RecipeSummary,
     pub points: Vec<ObservationPoint>,
 }

@@ -8,9 +8,10 @@ use toolcraft_axum_kit::{CommonResponse, IntoCommonResponse, ResponseResult};
 use crate::{
     dto::medical::{
         ExtractHealthMetricsRequest, ExtractHealthMetricsResponse, ExtractedHealthData,
-        HealthMetric, ListSelectableRecipesResponse, QueryObservationRequest,
-        QueryObservationResponse, RecordObservationRequest, RecordObservationResponse,
-        SelectableRecipeDto, UploadMarkdownRequest, UploadMarkdownResponse,
+        HealthMetric, ListSelectableMetricsResponse, QueryObservationRequest,
+        QueryObservationResponse, QueryRecipeObservationRequest, QueryRecipeObservationResponse,
+        RecipeSummaryDto, RecordObservationRequest, RecordObservationResponse, SelectableMetricDto,
+        UploadMarkdownRequest, UploadMarkdownResponse, ObservationPointDto, format_rfc3339_utc,
     },
     error::Error,
     statics::db_manager::get_default_ctx,
@@ -66,12 +67,12 @@ pub async fn record_observation(
     let api = HealthApi::new(get_default_ctx());
 
     // web request → internal 参数
-    let (subject_id, recipe_id, value, observed_at, source) = req.to_internal()?;
+    let (subject_id, metric_id, value, observed_at, source) = req.to_internal()?;
 
     // 构造业务请求
     let internal_req = RecordObservationWithSourceRequest {
         subject_id,
-        recipe_id,
+        metric_id,
         value,
         observed_at,
         source,
@@ -93,24 +94,73 @@ pub async fn record_observation(
 
 #[utoipa::path(
     get,
-    path = "/recipes/selectable",
+    path = "/recipes/observations",
     tag = "Medical",
+    params(
+        QueryRecipeObservationRequest
+    ),
     responses(
-        (status = 200, description = "List selectable recipes", body = CommonResponse<ListSelectableRecipesResponse>),
+        (status = 200, description = "Query composite metric observations", body = CommonResponse<QueryRecipeObservationResponse>),
     )
 )]
-pub async fn list_selectable_recipes() -> ResponseResult<ListSelectableRecipesResponse> {
+pub async fn query_recipe_observations(
+    Query(req): Query<QueryRecipeObservationRequest>,
+) -> ResponseResult<QueryRecipeObservationResponse> {
     let api = HealthApi::new(get_default_ctx());
 
-    let recipes = api.list_selectable_recipes().await.map_err(Error::Core)?;
+    let subject_id = req.subject_id;
 
-    let resp = ListSelectableRecipesResponse {
-        recipes: recipes
+    let (query, range) = req.to_internal()?;
+
+    let result = api
+        .query_composite_metric(query, range)
+        .await
+        .map_err(Error::Core)?;
+
+    let resp = QueryRecipeObservationResponse {
+        subject_id,
+        metric: RecipeSummaryDto {
+            id: result.metric.id.0,
+            metric_code: result.metric.metric_code.0,
+            metric_name: result.metric.metric_name,
+            unit: result.metric.unit,
+            value_type: result.metric.value_type.to_string(),
+            visualization: result.metric.visualization.to_string(),
+        },
+        points: result
+            .points
             .into_iter()
-            .map(|r| SelectableRecipeDto {
-                id: r.id,
-                name: r.metric_name,
-                unit: r.unit,
+            .map(|p| ObservationPointDto {
+                value: p.value.as_str().to_string(),
+                value_num: p.value.as_str().parse::<f64>().ok(),
+                observed_at: format_rfc3339_utc(p.observed_at),
+            })
+            .collect(),
+    };
+
+    Ok(resp.into_common_response().to_json())
+}
+
+#[utoipa::path(
+    get,
+    path = "/metrics/selectable",
+    tag = "Medical",
+    responses(
+        (status = 200, description = "List selectable metrics", body = CommonResponse<ListSelectableMetricsResponse>),
+    )
+)]
+pub async fn list_selectable_metrics() -> ResponseResult<ListSelectableMetricsResponse> {
+    let api = HealthApi::new(get_default_ctx());
+
+    let metrics = api.list_selectable_metrics().await.map_err(Error::Core)?;
+
+    let resp = ListSelectableMetricsResponse {
+        metrics: metrics
+            .into_iter()
+            .map(|m| SelectableMetricDto {
+                id: m.id.0,
+                name: m.name,
+                unit: m.unit,
             })
             .collect(),
     };
@@ -272,21 +322,17 @@ pub async fn extract_health_metrics(
     // 将提取的指标插入到数据库
     for metric in &metrics {
         // 尝试匹配指标代码到数据库中的指标
-        if let Ok(recipes_list) = api.list_selectable_recipes().await {
-            for db_recipe in recipes_list {
-                let Some(recipe_code) = db_recipe.metric_code.as_ref() else {
-                    continue;
-                };
-
+        if let Ok(metrics_list) = api.list_selectable_metrics().await {
+            for db_metric in metrics_list {
                 let metric_lower = metric.metric_code.to_lowercase();
-                let recipe_code_lower = recipe_code.as_ref().to_lowercase();
+                let db_metric_lower = db_metric.name.to_lowercase();
 
-                if metric_lower.contains(&recipe_code_lower)
-                    || recipe_code_lower.contains(&metric_lower)
+                if metric_lower.contains(&db_metric_lower)
+                    || db_metric_lower.contains(&metric_lower)
                 {
                     let obs_req = RecordObservationWithSourceRequest {
                         subject_id: demo_db::SubjectId(req.subject_id),
-                        recipe_id: demo_db::RecipeId(db_recipe.id),
+                        metric_id: db_metric.id,
                         value: demo_db::ObservationValue(metric.value.clone()),
                         observed_at: OffsetDateTime::now_utc(),
                         source: demo_db::CreateDataSource {
