@@ -104,7 +104,7 @@ impl ObservationService {
 
         let mut condition = Condition::all()
             .add(observation::Column::SubjectId.eq(subject_id.0))
-            .add(observation::Column::MetricId.is_in(metric_ids));
+            .add(observation::Column::MetricId.is_in(metric_ids.clone()));
 
         if let Some(from) = range.from {
             condition = condition.add(observation::Column::ObservedAt.gte(from));
@@ -115,33 +115,49 @@ impl ObservationService {
 
         let order_by = OrderBy::asc(observation::Column::ObservedAt);
 
-        #[derive(Debug, FromQueryResult)]
-        struct ObservationInputsRow {
-            observed_at: OffsetDateTime,
-            inputs: serde_json::Value,
+        let mut query = ObservationEntity::find()
+            .select_only()
+            .column(observation::Column::ObservedAt);
+
+        for id in &metric_ids {
+            let expr = Expr::expr(
+                Expr::case(
+                    Expr::col(observation::Column::MetricId).eq(*id),
+                    Expr::col(observation::Column::Value),
+                )
+                .finally(Expr::null()),
+            )
+            .max();
+            query = query.column_as(expr, format!("metric_{id}"));
         }
 
-        let observations = ObservationEntity::find()
-            .select_only()
-            .column(observation::Column::ObservedAt)
-            .column_as(
-                Expr::cust("jsonb_object_agg(metric_id, value ORDER BY metric_id)"),
-                "inputs",
-            )
+        query = query
             .apply_condition(Some(condition))
             .apply_group_by(vec![observation::Column::ObservedAt])
-            .apply_order(&order_by)
-            .into_model::<ObservationInputsRow>()
-            .all(self.repo.db())
-            .await?;
+            .apply_order(&order_by);
 
-        Ok(observations
-            .into_iter()
-            .map(|row| ObservationInputs {
-                observed_at: row.observed_at,
-                inputs: row.inputs,
-            })
-            .collect())
+        let rows = self.repo.db().query_all(query.as_query()).await?;
+
+        let mut observations = Vec::with_capacity(rows.len());
+        for row in rows {
+            let observed_at: OffsetDateTime = row.try_get("", "observed_at")?;
+            let mut inputs = serde_json::Map::new();
+
+            for id in &metric_ids {
+                let col = format!("metric_{id}");
+                let value: Option<String> = row.try_get("", &col)?;
+                if let Some(value) = value {
+                    inputs.insert(id.to_string(), serde_json::Value::String(value));
+                }
+            }
+
+            observations.push(ObservationInputs {
+                observed_at,
+                inputs: serde_json::Value::Object(inputs),
+            });
+        }
+
+        Ok(observations)
     }
 
     fn now_utc() -> OffsetDateTime {
