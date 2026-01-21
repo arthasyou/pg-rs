@@ -82,6 +82,7 @@ impl MigrationTrait for Migration {
                                  single_value",
                             ),
                     )
+                    .col(ColumnDef::new(Metric::Status).string().not_null())
                     .col(
                         ColumnDef::new(Metric::CreatedAt)
                             .timestamp_with_time_zone()
@@ -252,7 +253,7 @@ enum Subject {
 }
 
 #[derive(DeriveIden)]
-enum Metric {
+pub enum Metric {
     Table,
     MetricId,
     MetricCode,
@@ -260,6 +261,7 @@ enum Metric {
     Unit,
     ValueType,
     Visualization,
+    Status,
     CreatedAt,
 }
 

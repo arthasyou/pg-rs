@@ -1,7 +1,6 @@
 use core::fmt;
 
 use serde::{Deserialize, Serialize};
-
 use time::OffsetDateTime;
 
 use crate::table::observation::dto::ObservationValue;
@@ -50,6 +49,30 @@ impl Metric {
             MetricValueType::Decimal => value.try_parse_f64(),
             MetricValueType::Boolean => None,
             MetricValueType::Text => None,
+        }
+    }
+}
+
+/// Metric summary
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MetricSummary {
+    pub id: i64,
+    pub metric_code: MetricCode,
+    pub metric_name: String,
+    pub unit: Option<String>,
+    pub value_type: MetricValueType,
+    pub visualization: MetricVisualization,
+}
+
+impl From<Metric> for MetricSummary {
+    fn from(metric: Metric) -> Self {
+        Self {
+            id: metric.id.0,
+            metric_code: metric.code,
+            metric_name: metric.name,
+            unit: metric.unit,
+            value_type: metric.value_type,
+            visualization: metric.visualization,
         }
     }
 }

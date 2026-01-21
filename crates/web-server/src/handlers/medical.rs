@@ -10,7 +10,7 @@ use crate::{
         ExtractHealthMetricsRequest, ExtractHealthMetricsResponse, ExtractedHealthData,
         HealthMetric, ListSelectableMetricsResponse, QueryObservationRequest,
         QueryObservationResponse, QueryRecipeObservationRequest, QueryRecipeObservationResponse,
-        RecipeSummaryDto, RecordObservationRequest, RecordObservationResponse, SelectableMetricDto,
+        MetricSummaryDto, RecordObservationRequest, RecordObservationResponse, SelectableMetricDto,
         UploadMarkdownRequest, UploadMarkdownResponse, ObservationPointDto, format_rfc3339_utc,
     },
     error::Error,
@@ -119,8 +119,8 @@ pub async fn query_recipe_observations(
 
     let resp = QueryRecipeObservationResponse {
         subject_id,
-        metric: RecipeSummaryDto {
-            id: result.metric.id.0,
+        metric: MetricSummaryDto {
+            id: result.metric.id,
             metric_code: result.metric.metric_code.0,
             metric_name: result.metric.metric_name,
             unit: result.metric.unit,

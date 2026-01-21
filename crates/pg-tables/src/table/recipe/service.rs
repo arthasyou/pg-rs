@@ -31,7 +31,6 @@ impl RecipeService {
         let now = OffsetDateTime::now_utc();
 
         let active = recipe::ActiveModel {
-            kind: Set(input.kind.to_string()),
             deps: Set(input.deps),
             calc_key: Set(input.calc_key),
             arg_map: Set(input.arg_map),
@@ -65,10 +64,6 @@ impl RecipeService {
         let mut condition = Condition::all();
         let mut has_condition = false;
 
-        if let Some(kind) = input.kind {
-            condition = condition.add(recipe::Column::Kind.eq(kind.to_string()));
-            has_condition = true;
-        }
         if let Some(calc_key) = input.calc_key {
             condition = condition.add(recipe::Column::CalcKey.eq(calc_key));
             has_condition = true;
@@ -85,8 +80,7 @@ impl RecipeService {
 
     fn from_model(model: recipe::Model) -> Recipe {
         Recipe {
-            id: model.recipe_id,
-            kind: RecipeKind::from(model.kind),
+            id: model.metric_id,
             deps: model.deps,
             calc_key: model.calc_key,
             arg_map: model.arg_map,

@@ -1,5 +1,7 @@
 use sea_orm_migration::prelude::*;
 
+use crate::m0001_phase_a_core::Metric;
+
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -12,20 +14,18 @@ impl MigrationTrait for Migration {
                     .table(Recipe::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Recipe::RecipeId)
+                        ColumnDef::new(Recipe::MetricId)
                             .big_integer()
                             .not_null()
-                            .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Recipe::Kind).string().not_null())
                     .col(ColumnDef::new(Recipe::Deps).json_binary().not_null())
-                    .col(ColumnDef::new(Recipe::CalcKey).string().null())
-                    .col(ColumnDef::new(Recipe::ArgMap).json_binary().null())
-                    .col(ColumnDef::new(Recipe::Expr).json_binary().null())
+                    .col(ColumnDef::new(Recipe::CalcKey).string().not_null())
+                    .col(ColumnDef::new(Recipe::ArgMap).json_binary().not_null())
+                    .col(ColumnDef::new(Recipe::Expr).json_binary().not_null())
                     .col(ColumnDef::new(Recipe::MetricCode).string().not_null())
                     .col(ColumnDef::new(Recipe::MetricName).string().not_null())
-                    .col(ColumnDef::new(Recipe::Unit).string().not_null())
+                    .col(ColumnDef::new(Recipe::Unit).string().null())
                     .col(ColumnDef::new(Recipe::ValueType).string().not_null())
                     .col(ColumnDef::new(Recipe::Visualization).string().not_null())
                     .col(ColumnDef::new(Recipe::Status).string().not_null())
@@ -34,6 +34,11 @@ impl MigrationTrait for Migration {
                             .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Recipe::Table, Recipe::MetricId)
+                            .to(Metric::Table, Metric::MetricId),
                     )
                     .to_owned(),
             )
@@ -54,7 +59,7 @@ impl MigrationTrait for Migration {
 #[derive(DeriveIden)]
 enum Recipe {
     Table,
-    RecipeId,
+    MetricId,
     Kind,
     Deps,
     CalcKey,

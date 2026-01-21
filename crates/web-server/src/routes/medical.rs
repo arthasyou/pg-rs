@@ -8,7 +8,7 @@ use crate::{
         QueryObservationResponse, QueryRecipeObservationRequest, QueryRecipeObservationResponse,
         RecordObservationRequest, RecordObservationResponse, MetricDto, SelectableMetricDto,
         SourceInput, UploadMarkdownRequest, UploadMarkdownResponse, ExtractHealthMetricsRequest,
-        ExtractHealthMetricsResponse, HealthMetric, ExtractedHealthData, RecipeSummaryDto,
+        ExtractHealthMetricsResponse, HealthMetric, ExtractedHealthData, MetricSummaryDto,
     },
     handlers::medical::{
         list_selectable_metrics, query_observations, query_recipe_observations, record_observation,
@@ -34,7 +34,7 @@ use crate::{
             QueryRecipeObservationResponse,
             MetricDto,
             ObservationPointDto,
-            RecipeSummaryDto,
+            MetricSummaryDto,
             RecordObservationRequest,
             SourceInput,
             RecordObservationResponse,

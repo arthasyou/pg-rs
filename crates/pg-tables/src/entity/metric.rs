@@ -14,6 +14,7 @@ pub struct Model {
     pub unit: Option<String>,
     pub value_type: String,
     pub visualization: String,
+    pub status: String,
     pub created_at: TimeDateTimeWithTimeZone,
 }
 
@@ -21,11 +22,19 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::observation::Entity")]
     Observation,
+    #[sea_orm(has_one = "super::recipe::Entity")]
+    Recipe,
 }
 
 impl Related<super::observation::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Observation.def()
+    }
+}
+
+impl Related<super::recipe::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Recipe.def()
     }
 }
 

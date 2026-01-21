@@ -6,19 +6,18 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "recipe")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub recipe_id: i64,
-    pub kind: String,
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub metric_id: i64,
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub deps: Json,
-    pub calc_key: Option<String>,
+    pub calc_key: String,
     #[sea_orm(column_type = "JsonBinary", nullable)]
-    pub arg_map: Option<Json>,
+    pub arg_map: Json,
     #[sea_orm(column_type = "JsonBinary", nullable)]
-    pub expr: Option<Json>,
+    pub expr: Json,
     pub metric_code: String,
     pub metric_name: String,
-    pub unit: String,
+    pub unit: Option<String>,
     pub value_type: String,
     pub visualization: String,
     pub status: String,
@@ -26,6 +25,21 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::metric::Entity",
+        from = "Column::MetricId",
+        to = "super::metric::Column::MetricId",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Metric,
+}
+
+impl Related<super::metric::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Metric.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

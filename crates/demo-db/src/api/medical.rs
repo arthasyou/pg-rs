@@ -7,7 +7,7 @@ use pg_tables::{
             dto::{ObservationPoint, ObservationQueryKey, ObservationValue, RecordObservation},
             service::ObservationService,
         },
-        recipe::{dto::RecipeKind, service::RecipeService},
+        recipe::service::RecipeService,
         subject::service::SubjectService,
     },
 };
@@ -148,65 +148,61 @@ impl HealthApi {
         req: QueryRecipeObservationRequest,
         range: Range<OffsetDateTime>,
     ) -> Result<QueryRecipeObservationResponse> {
-        let recipe = self.recipe.get(req.recipe_id.0).await?;
+        let recipe = match self.recipe.get(req.recipe_id.0).await {
+            Ok(recipe) => Some(recipe),
+            Err(err) if err.is_not_found() => None,
+            Err(err) => return Err(err),
+        };
 
-        let deps_raw: Vec<i64> = serde_json::from_value(recipe.deps.clone())
-            .map_err(|_| Error::internal("invalid deps for recipe"))?;
-        let deps = deps_raw
-            .into_iter()
-            .map(pg_tables::table::metric::dto::MetricId)
-            .collect::<Vec<_>>();
+        if let Some(recipe) = recipe {
+            let deps_raw: Vec<i64> = serde_json::from_value(recipe.deps.clone())
+                .map_err(|_| Error::internal("invalid deps for recipe"))?;
+            let deps = deps_raw
+                .into_iter()
+                .map(pg_tables::table::metric::dto::MetricId)
+                .collect::<Vec<_>>();
 
-        match recipe.kind.clone() {
-            RecipeKind::Primitive => {
-                let metric_id = *deps
-                    .first()
-                    .ok_or(Error::internal("missing deps for primitive recipe"))?;
-                if deps.len() != 1 {
-                    return Err(Error::internal(
-                        "primitive recipe should have exactly one dep",
-                    ));
-                }
+            let calc = get_calc(&recipe.calc_key).ok_or(Error::internal("unknown calc_key"))?;
 
-                let key = ObservationQueryKey {
-                    subject_id: req.subject_id,
-                    metric_id,
-                };
+            let rows = self
+                .observation
+                .query_observation_by_metrics(req.subject_id, deps, range.into())
+                .await?;
 
-                let points = self
-                    .observation
-                    .query_observation(key, range.into())
-                    .await?;
-
-                let metric = recipe.into();
-                Ok(QueryRecipeObservationResponse { metric, points })
+            let mut points = Vec::with_capacity(rows.len());
+            for row in rows {
+                let inputs = parse_inputs(&row.inputs)?;
+                let value = calc(&inputs)?;
+                points.push(ObservationPoint {
+                    value: ObservationValue(value.to_string()),
+                    observed_at: row.observed_at,
+                });
             }
-            RecipeKind::Derived => {
-                let calc_key = recipe
-                    .calc_key
-                    .as_deref()
-                    .ok_or(Error::internal("missing calc_key"))?;
-                let calc = get_calc(calc_key).ok_or(Error::internal("unknown calc_key"))?;
 
-                let rows = self
-                    .observation
-                    .query_observation_by_metrics(req.subject_id, deps, range.into())
-                    .await?;
+            let metric = recipe.into();
 
-                let mut points = Vec::with_capacity(rows.len());
-                for row in rows {
-                    let inputs = parse_inputs(&row.inputs)?;
-                    let value = calc(&inputs)?;
-                    points.push(ObservationPoint {
-                        value: ObservationValue(value.to_string()),
-                        observed_at: row.observed_at,
-                    });
-                }
-
-                let metric = recipe.into();
-
-                Ok(QueryRecipeObservationResponse { metric, points })
-            }
+            return Ok(QueryRecipeObservationResponse { metric, points });
         }
+
+        let metric = self
+            .metric
+            .get(req.recipe_id.0.into())
+            .await?
+            .ok_or(Error::db_not_found("metric"))?;
+
+        let key = ObservationQueryKey {
+            subject_id: req.subject_id,
+            metric_id: metric.id,
+        };
+
+        let points = self
+            .observation
+            .query_observation(key, range.into())
+            .await?;
+
+        Ok(QueryRecipeObservationResponse {
+            metric: metric.into(),
+            points,
+        })
     }
 }

@@ -7,9 +7,9 @@
 
 use pg_tables::table::{
     data_source::dto::{CreateDataSource, DataSourceId},
-    metric::dto::{Metric, MetricId},
+    metric::dto::{Metric, MetricId, MetricSummary},
     observation::dto::{ObservationId, ObservationPoint, ObservationValue},
-    recipe::dto::{RecipeId, RecipeSummary},
+    recipe::dto::RecipeId,
     subject::dto::SubjectId,
 };
 use time::OffsetDateTime;
@@ -73,6 +73,6 @@ pub struct QueryRecipeObservationRequest {
 }
 
 pub struct QueryRecipeObservationResponse {
-    pub metric: RecipeSummary,
+    pub metric: MetricSummary,
     pub points: Vec<ObservationPoint>,
 }

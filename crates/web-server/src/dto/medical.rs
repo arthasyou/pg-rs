@@ -230,7 +230,10 @@ pub struct QueryRecipeObservationRequest {
 impl QueryRecipeObservationRequest {
     pub fn to_internal(
         self,
-    ) -> Result<(demo_db::dto::medical::QueryRecipeObservationRequest, Range<OffsetDateTime>)> {
+    ) -> Result<(
+        demo_db::dto::medical::QueryRecipeObservationRequest,
+        Range<OffsetDateTime>,
+    )> {
         let start = match self.start_at {
             Some(ref s) => parse_rfc3339(s)?,
             None => OffsetDateTime::from_unix_timestamp(0).unwrap(),
@@ -258,16 +261,16 @@ impl QueryRecipeObservationRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct QueryRecipeObservationResponse {
     pub subject_id: i64,
-    pub metric: RecipeSummaryDto,
+    pub metric: MetricSummaryDto,
     pub points: Vec<ObservationPointDto>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct RecipeSummaryDto {
+pub struct MetricSummaryDto {
     pub id: i64,
     pub metric_code: String,
     pub metric_name: String,
-    pub unit: String,
+    pub unit: Option<String>,
     pub value_type: String,
     pub visualization: String,
 }
