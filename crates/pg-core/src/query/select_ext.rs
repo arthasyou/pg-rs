@@ -1,6 +1,6 @@
 use sea_orm::{
-    ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
-    Select, Value, prelude::Expr,
+    ColumnTrait, Condition, DatabaseConnection, EntityTrait, IntoSimpleExpr, QueryFilter,
+    QueryOrder, QuerySelect, Select, Value, prelude::Expr,
 };
 
 use super::PaginationParams;
@@ -19,6 +19,11 @@ where
 
     /// Apply order by
     fn apply_order(self, order: &OrderBy<E>) -> Self;
+
+    /// Apply group by columns
+    fn apply_group_by<C>(self, columns: Vec<C>) -> Self
+    where
+        C: IntoSimpleExpr;
 
     /// Apply optional equal condition
     fn apply_optional_eq<C, V>(self, column: C, value: Option<V>) -> Self
@@ -57,6 +62,16 @@ where
         match ob.order {
             SortOrder::Asc => self = self.order_by_asc(ob.column),
             SortOrder::Desc => self = self.order_by_desc(ob.column),
+        }
+        self
+    }
+
+    fn apply_group_by<C>(mut self, columns: Vec<C>) -> Self
+    where
+        C: IntoSimpleExpr,
+    {
+        for col in columns {
+            self = self.group_by(col);
         }
         self
     }
