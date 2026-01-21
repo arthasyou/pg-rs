@@ -6,7 +6,7 @@ use crate::{
     Repository, Result,
     entity::recipe,
     table::{
-        metric::dto::{MetricCode, MetricStatus, MetricValueType, MetricVisualization},
+        metric::dto::{MetricCode, MetricValueType, MetricVisualization},
         recipe::dto::{CreateRecipe, QueryRecipe, Recipe, RecipeKind},
     },
 };

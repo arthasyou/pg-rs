@@ -8,7 +8,7 @@ use pg_tables::{
             service::ObservationService,
         },
         recipe::{dto::RecipeKind, service::RecipeService},
-        subject::{dto::SubjectId, service::SubjectService},
+        subject::service::SubjectService,
     },
 };
 use time::OffsetDateTime;
