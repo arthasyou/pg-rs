@@ -49,6 +49,13 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(
+                        ColumnDef::new(Metric::Kind)
+                            .string()
+                            .not_null()
+                            .default("primitive")
+                            .comment("Type: primitive, derived"),
+                    )
+                    .col(
                         ColumnDef::new(Metric::MetricCode)
                             .string()
                             .not_null()
@@ -82,7 +89,13 @@ impl MigrationTrait for Migration {
                                  single_value",
                             ),
                     )
-                    .col(ColumnDef::new(Metric::Status).string().not_null())
+                    .col(
+                        ColumnDef::new(Metric::Status)
+                            .string()
+                            .not_null()
+                            .default("active")
+                            .comment("Status: active, deprecated"),
+                    )
                     .col(
                         ColumnDef::new(Metric::CreatedAt)
                             .timestamp_with_time_zone()
@@ -256,6 +269,7 @@ enum Subject {
 pub enum Metric {
     Table,
     MetricId,
+    Kind,
     MetricCode,
     MetricName,
     Unit,

@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "recipe")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false)]
+    #[sea_orm(primary_key)]
+    pub recipe_id: i64,
     pub metric_id: i64,
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub deps: Json,
@@ -15,12 +16,6 @@ pub struct Model {
     pub arg_map: Json,
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub expr: Json,
-    pub metric_code: String,
-    pub metric_name: String,
-    pub unit: Option<String>,
-    pub value_type: String,
-    pub visualization: String,
-    pub status: String,
     pub created_at: TimeDateTimeWithTimeZone,
 }
 

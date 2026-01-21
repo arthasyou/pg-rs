@@ -6,8 +6,8 @@ use crate::{
     Repository, Result,
     entity::recipe,
     table::{
-        metric::dto::{MetricCode, MetricValueType, MetricVisualization},
-        recipe::dto::{CreateRecipe, QueryRecipe, Recipe, RecipeKind},
+        metric::dto::MetricId,
+        recipe::dto::{CreateRecipe, QueryRecipe, Recipe},
     },
 };
 
@@ -31,16 +31,11 @@ impl RecipeService {
         let now = OffsetDateTime::now_utc();
 
         let active = recipe::ActiveModel {
+            metric_id: Set(input.metric_id),
             deps: Set(input.deps),
             calc_key: Set(input.calc_key),
             arg_map: Set(input.arg_map),
             expr: Set(input.expr),
-            metric_code: Set(input.metric_code.0),
-            metric_name: Set(input.metric_name),
-            unit: Set(input.unit),
-            value_type: Set(input.value_type.to_string()),
-            visualization: Set(input.visualization.to_string()),
-            status: Set(input.status.to_string()),
             created_at: Set(now),
             ..Default::default()
         };
@@ -78,19 +73,26 @@ impl RecipeService {
         Ok(models.into_iter().map(Self::from_model).collect())
     }
 
+    /// 根据 metric_id 获取 Recipe
+    pub async fn get_by_metric_id(&self, metric_id: MetricId) -> Result<Option<Recipe>> {
+        let model = self
+            .repo
+            .select_one(
+                self.repo
+                    .query_filtered(Condition::all().add(recipe::Column::MetricId.eq(metric_id.0))),
+            )
+            .await?;
+        Ok(model.map(Self::from_model))
+    }
+
     fn from_model(model: recipe::Model) -> Recipe {
         Recipe {
-            id: model.metric_id,
+            id: model.recipe_id,
+            metric_id: model.metric_id,
             deps: model.deps,
             calc_key: model.calc_key,
             arg_map: model.arg_map,
             expr: model.expr,
-            metric_code: MetricCode(model.metric_code),
-            metric_name: model.metric_name,
-            unit: model.unit,
-            value_type: MetricValueType::from(model.value_type),
-            visualization: MetricVisualization::from(model.visualization),
-            status: model.status.into(),
             created_at: model.created_at,
         }
     }

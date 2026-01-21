@@ -55,3 +55,29 @@ VALUES
 INSERT INTO metric (metric_code, metric_name, unit, value_type, visualization)
 VALUES
 ('lab.hp.antibody', '幽门螺杆菌抗体', '', 'text', 'value_list');
+
+-- ======================================================
+-- recipe / 综合指标
+-- ======================================================
+-- ======================================================
+-- metric / 综合指标（Recipe）
+-- ======================================================
+
+INSERT INTO metric (
+    metric_code,
+    metric_name,
+    unit,
+    value_type,
+    visualization,
+    kind
+)
+VALUES (
+    'calc.tyg',
+    '胰岛素抵抗指数（TyG）',
+    NULL,
+    'float',
+    'line',
+    'Derived'
+);
+
+

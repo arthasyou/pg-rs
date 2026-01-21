@@ -8,7 +8,7 @@ use crate::{
     table::{
         dto::PaginationInput,
         metric::dto::{
-            CreateMetric, ListMetric, Metric, MetricCode, MetricId, MetricValueType,
+            CreateMetric, ListMetric, Metric, MetricCode, MetricId, MetricKind, MetricValueType,
             MetricVisualization,
         },
     },
@@ -41,6 +41,7 @@ impl MetricService {
 
         let now = Self::now_utc();
         let active = metric::ActiveModel {
+            kind: Set(input.kind.to_string()),
             metric_code: Set(input.code.0),
             metric_name: Set(input.name),
             unit: Set(input.unit),
@@ -137,6 +138,7 @@ impl MetricService {
     fn from_model(model: metric::Model) -> Metric {
         Metric {
             id: MetricId(model.metric_id),
+            kind: MetricKind::from(model.kind),
             code: MetricCode(model.metric_code),
             name: model.metric_name,
             unit: model.unit,

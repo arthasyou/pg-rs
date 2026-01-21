@@ -5,6 +5,52 @@ use time::OffsetDateTime;
 
 use crate::table::observation::dto::ObservationValue;
 
+/// Metric 类型
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MetricKind {
+    Primitive,
+    Derived,
+}
+
+impl MetricKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MetricKind::Primitive => "primitive",
+            MetricKind::Derived => "derived",
+        }
+    }
+}
+
+impl fmt::Display for MetricKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl From<&str> for MetricKind {
+    fn from(value: &str) -> Self {
+        match value {
+            "primitive" => MetricKind::Primitive,
+            "derived" => MetricKind::Derived,
+            other => {
+                let normalized = other.trim().to_ascii_lowercase();
+                match normalized.as_str() {
+                    "primitive" => MetricKind::Primitive,
+                    "derived" => MetricKind::Derived,
+                    _ => MetricKind::Primitive,
+                }
+            }
+        }
+    }
+}
+
+impl From<String> for MetricKind {
+    fn from(value: String) -> Self {
+        MetricKind::from(value.as_str())
+    }
+}
+
 /// Metric 表示：
 /// 一个“可被观测的指标定义”
 ///
@@ -15,6 +61,9 @@ use crate::table::observation::dto::ObservationValue;
 pub struct Metric {
     /// 系统内稳定的指标标识
     pub id: MetricId,
+
+    /// 指标类型
+    pub kind: MetricKind,
 
     /// 稳定的语义代码（机器友好）
     /// 例如：blood_pressure_systolic
@@ -80,6 +129,7 @@ impl From<Metric> for MetricSummary {
 /// 创建 Metric 的输入参数
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateMetric {
+    pub kind: MetricKind,
     pub code: MetricCode,
     pub name: String,
     pub unit: Option<String>,

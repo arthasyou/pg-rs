@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key)]
     pub metric_id: i64,
+    pub kind: String,
     #[sea_orm(unique)]
     pub metric_code: String,
     pub metric_name: String,
@@ -22,7 +23,7 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::observation::Entity")]
     Observation,
-    #[sea_orm(has_one = "super::recipe::Entity")]
+    #[sea_orm(has_one = "super::recipe::Entity", has_many = "super::recipe::Entity")]
     Recipe,
 }
 

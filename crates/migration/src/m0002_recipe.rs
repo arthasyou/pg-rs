@@ -14,21 +14,17 @@ impl MigrationTrait for Migration {
                     .table(Recipe::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Recipe::MetricId)
+                        ColumnDef::new(Recipe::RecipeId)
                             .big_integer()
                             .not_null()
+                            .auto_increment()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Recipe::MetricId).big_integer().not_null())
                     .col(ColumnDef::new(Recipe::Deps).json_binary().not_null())
                     .col(ColumnDef::new(Recipe::CalcKey).string().not_null())
                     .col(ColumnDef::new(Recipe::ArgMap).json_binary().not_null())
                     .col(ColumnDef::new(Recipe::Expr).json_binary().not_null())
-                    .col(ColumnDef::new(Recipe::MetricCode).string().not_null())
-                    .col(ColumnDef::new(Recipe::MetricName).string().not_null())
-                    .col(ColumnDef::new(Recipe::Unit).string().null())
-                    .col(ColumnDef::new(Recipe::ValueType).string().not_null())
-                    .col(ColumnDef::new(Recipe::Visualization).string().not_null())
-                    .col(ColumnDef::new(Recipe::Status).string().not_null())
                     .col(
                         ColumnDef::new(Recipe::CreatedAt)
                             .timestamp_with_time_zone()
@@ -38,7 +34,8 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .from(Recipe::Table, Recipe::MetricId)
-                            .to(Metric::Table, Metric::MetricId),
+                            .to(Metric::Table, Metric::MetricId)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
@@ -59,17 +56,11 @@ impl MigrationTrait for Migration {
 #[derive(DeriveIden)]
 enum Recipe {
     Table,
+    RecipeId,
     MetricId,
-    Kind,
     Deps,
     CalcKey,
     ArgMap,
     Expr,
-    MetricCode,
-    MetricName,
-    Unit,
-    ValueType,
-    Visualization,
-    Status,
     CreatedAt,
 }

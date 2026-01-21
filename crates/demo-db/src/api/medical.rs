@@ -2,13 +2,16 @@ use pg_tables::{
     pg_core::DbContext,
     table::{
         data_source::{dto::DataSourceId, service::DataSourceService},
-        metric::{dto::Metric, service::MetricService},
+        metric::{
+            dto::{Metric, MetricKind, MetricSummary},
+            service::MetricService,
+        },
         observation::{
             dto::{ObservationPoint, ObservationQueryKey, ObservationValue, RecordObservation},
             service::ObservationService,
         },
-        recipe::service::RecipeService,
-        subject::service::SubjectService,
+        recipe::{dto::Recipe, service::RecipeService},
+        subject::{dto::SubjectId, service::SubjectService},
     },
 };
 use time::OffsetDateTime;
@@ -148,51 +151,74 @@ impl HealthApi {
         req: QueryRecipeObservationRequest,
         range: Range<OffsetDateTime>,
     ) -> Result<QueryRecipeObservationResponse> {
-        let recipe = match self.recipe.get(req.recipe_id.0).await {
-            Ok(recipe) => Some(recipe),
-            Err(err) if err.is_not_found() => None,
-            Err(err) => return Err(err),
-        };
-
-        if let Some(recipe) = recipe {
-            let deps_raw: Vec<i64> = serde_json::from_value(recipe.deps.clone())
-                .map_err(|_| Error::internal("invalid deps for recipe"))?;
-            let deps = deps_raw
-                .into_iter()
-                .map(pg_tables::table::metric::dto::MetricId)
-                .collect::<Vec<_>>();
-
-            let calc = get_calc(&recipe.calc_key).ok_or(Error::internal("unknown calc_key"))?;
-
-            let rows = self
-                .observation
-                .query_observation_by_metrics(req.subject_id, deps, range.into())
-                .await?;
-
-            let mut points = Vec::with_capacity(rows.len());
-            for row in rows {
-                let inputs = parse_inputs(&row.inputs)?;
-                let value = calc(&inputs)?;
-                points.push(ObservationPoint {
-                    value: ObservationValue(value.to_string()),
-                    observed_at: row.observed_at,
-                });
-            }
-
-            let metric = recipe.into();
-
-            return Ok(QueryRecipeObservationResponse { metric, points });
-        }
-
         let metric = self
             .metric
             .get(req.recipe_id.0.into())
             .await?
             .ok_or(Error::db_not_found("metric"))?;
+        let metric_summary = metric.clone().into();
 
+        match metric.kind {
+            MetricKind::Primitive => {
+                self.query_observation_metric(req.subject_id, metric.id, metric_summary, range)
+                    .await
+            }
+            MetricKind::Derived => {
+                let recipe = self
+                    .recipe
+                    .get_by_metric_id(metric.id)
+                    .await?
+                    .ok_or(Error::db_not_found("recipe"))?;
+                self.eval_composite_recipe(req.subject_id, recipe, metric_summary, range)
+                    .await
+            }
+        }
+    }
+
+    async fn eval_composite_recipe(
+        &self,
+        subject_id: SubjectId,
+        recipe: Recipe,
+        metric: MetricSummary,
+        range: Range<OffsetDateTime>,
+    ) -> Result<QueryRecipeObservationResponse> {
+        let deps_raw: Vec<i64> = serde_json::from_value(recipe.deps.clone())
+            .map_err(|_| Error::internal("invalid deps for recipe"))?;
+        let deps = deps_raw
+            .into_iter()
+            .map(pg_tables::table::metric::dto::MetricId)
+            .collect::<Vec<_>>();
+
+        let calc = get_calc(&recipe.calc_key).ok_or(Error::internal("unknown calc_key"))?;
+
+        let rows = self
+            .observation
+            .query_observation_by_metrics(subject_id, deps, range.into())
+            .await?;
+
+        let mut points = Vec::with_capacity(rows.len());
+        for row in rows {
+            let inputs = parse_inputs(&row.inputs)?;
+            let value = calc(&inputs)?;
+            points.push(ObservationPoint {
+                value: ObservationValue(value.to_string()),
+                observed_at: row.observed_at,
+            });
+        }
+
+        Ok(QueryRecipeObservationResponse { metric, points })
+    }
+
+    async fn query_observation_metric(
+        &self,
+        subject_id: SubjectId,
+        metric_id: pg_tables::table::metric::dto::MetricId,
+        metric: pg_tables::table::metric::dto::MetricSummary,
+        range: Range<OffsetDateTime>,
+    ) -> Result<QueryRecipeObservationResponse> {
         let key = ObservationQueryKey {
-            subject_id: req.subject_id,
-            metric_id: metric.id,
+            subject_id,
+            metric_id,
         };
 
         let points = self
@@ -200,9 +226,6 @@ impl HealthApi {
             .query_observation(key, range.into())
             .await?;
 
-        Ok(QueryRecipeObservationResponse {
-            metric: metric.into(),
-            points,
-        })
+        Ok(QueryRecipeObservationResponse { metric, points })
     }
 }
