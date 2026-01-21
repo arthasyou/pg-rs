@@ -645,6 +645,7 @@ name = "demo-db"
 version = "0.1.0"
 dependencies = [
  "pg-tables",
+ "serde_json",
  "thiserror",
  "time",
 ]

@@ -7,3 +7,4 @@ edition.workspace = true
 time.workspace = true
 thiserror.workspace = true
 pg-tables.workspace = true
+serde_json.workspace = true
