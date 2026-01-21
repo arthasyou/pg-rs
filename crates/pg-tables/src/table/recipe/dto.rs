@@ -74,11 +74,11 @@ pub struct Recipe {
     pub calc_key: Option<String>,
     pub arg_map: Option<serde_json::Value>,
     pub expr: Option<serde_json::Value>,
-    pub metric_code: Option<MetricCode>,
-    pub metric_name: Option<String>,
-    pub unit: Option<String>,
-    pub value_type: Option<MetricValueType>,
-    pub visualization: Option<MetricVisualization>,
+    pub metric_code: MetricCode,
+    pub metric_name: String,
+    pub unit: String,
+    pub value_type: MetricValueType,
+    pub visualization: MetricVisualization,
     pub status: MetricStatus,
     pub created_at: OffsetDateTime,
 }
@@ -91,11 +91,11 @@ pub struct CreateRecipe {
     pub calc_key: Option<String>,
     pub arg_map: Option<serde_json::Value>,
     pub expr: Option<serde_json::Value>,
-    pub metric_code: Option<MetricCode>,
-    pub metric_name: Option<String>,
-    pub unit: Option<String>,
-    pub value_type: Option<MetricValueType>,
-    pub visualization: Option<MetricVisualization>,
+    pub metric_code: MetricCode,
+    pub metric_name: String,
+    pub unit: String,
+    pub value_type: MetricValueType,
+    pub visualization: MetricVisualization,
     pub status: MetricStatus,
 }
 
@@ -104,4 +104,28 @@ pub struct CreateRecipe {
 pub struct QueryRecipe {
     pub kind: Option<RecipeKind>,
     pub calc_key: Option<String>,
+}
+
+/// Recipe
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecipeSummary {
+    pub id: RecipeId,
+    pub metric_code: MetricCode,
+    pub metric_name: String,
+    pub unit: String,
+    pub value_type: MetricValueType,
+    pub visualization: MetricVisualization,
+}
+
+impl From<Recipe> for RecipeSummary {
+    fn from(recipe: Recipe) -> Self {
+        Self {
+            id: recipe.id.into(),
+            metric_code: recipe.metric_code,
+            metric_name: recipe.metric_name,
+            unit: recipe.unit,
+            value_type: recipe.value_type,
+            visualization: recipe.visualization,
+        }
+    }
 }
