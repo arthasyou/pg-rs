@@ -8,10 +8,10 @@ use toolcraft_axum_kit::{CommonResponse, IntoCommonResponse, ResponseResult};
 use crate::{
     dto::medical::{
         ExtractHealthMetricsRequest, ExtractHealthMetricsResponse, ExtractedHealthData,
-        HealthMetric, ListSelectableMetricsResponse, QueryObservationRequest,
-        QueryObservationResponse, QueryRecipeObservationRequest, QueryRecipeObservationResponse,
-        MetricSummaryDto, RecordObservationRequest, RecordObservationResponse, SelectableMetricDto,
-        UploadMarkdownRequest, UploadMarkdownResponse, ObservationPointDto, format_rfc3339_utc,
+        HealthMetric, ListSelectableMetricsResponse, QueryObservationParams,
+        QueryRecipeObservationResponse, MetricSummaryDto, RecordObservationRequest,
+        RecordObservationResponse, SelectableMetricDto, UploadMarkdownRequest,
+        UploadMarkdownResponse, ObservationPointDto, format_rfc3339_utc,
     },
     error::Error,
     statics::db_manager::get_default_ctx,
@@ -23,15 +23,15 @@ use crate::{
     path = "/observations",
     tag = "Medical",
     params(
-        QueryObservationRequest
+        QueryObservationParams
     ),
     responses(
-        (status = 200, description = "Query observations", body = CommonResponse<QueryObservationResponse>),
+        (status = 200, description = "Query observations", body = CommonResponse<QueryRecipeObservationResponse>),
     )
 )]
 pub async fn query_observations(
-    Query(req): Query<QueryObservationRequest>,
-) -> ResponseResult<QueryObservationResponse> {
+    Query(req): Query<QueryObservationParams>,
+) -> ResponseResult<QueryRecipeObservationResponse> {
     // 1. 构造 HealthApi（轻量）
     let api = HealthApi::new(get_default_ctx());
 
@@ -46,9 +46,27 @@ pub async fn query_observations(
         .await
         .map_err(Error::Core)?;
 
-    let resp: QueryObservationResponse = (subject_id, result).into();
+    let resp = QueryRecipeObservationResponse {
+        subject_id,
+        metric: MetricSummaryDto {
+            id: result.metric.id,
+            metric_code: result.metric.metric_code.0,
+            metric_name: result.metric.metric_name,
+            unit: result.metric.unit,
+            value_type: result.metric.value_type.to_string(),
+            visualization: result.metric.visualization.to_string(),
+        },
+        points: result
+            .points
+            .into_iter()
+            .map(|p| ObservationPointDto {
+                value: p.value.as_str().to_string(),
+                value_num: p.value.as_str().parse::<f64>().ok(),
+                observed_at: format_rfc3339_utc(p.observed_at),
+            })
+            .collect(),
+    };
 
-    // 4. 返回成功结果
     Ok(resp.into_common_response().to_json())
 }
 
@@ -87,55 +105,6 @@ pub async fn record_observation(
     let resp = RecordObservationResponse {
         observation_id: result.observation_id.0,
         source_id: result.source_id.0,
-    };
-
-    Ok(resp.into_common_response().to_json())
-}
-
-#[utoipa::path(
-    get,
-    path = "/recipes/observations",
-    tag = "Medical",
-    params(
-        QueryRecipeObservationRequest
-    ),
-    responses(
-        (status = 200, description = "Query composite metric observations", body = CommonResponse<QueryRecipeObservationResponse>),
-    )
-)]
-pub async fn query_recipe_observations(
-    Query(req): Query<QueryRecipeObservationRequest>,
-) -> ResponseResult<QueryRecipeObservationResponse> {
-    let api = HealthApi::new(get_default_ctx());
-
-    let subject_id = req.subject_id;
-
-    let (query, range) = req.to_internal()?;
-
-    let result = api
-        .query_composite_metric(query, range)
-        .await
-        .map_err(Error::Core)?;
-
-    let resp = QueryRecipeObservationResponse {
-        subject_id,
-        metric: MetricSummaryDto {
-            id: result.metric.id,
-            metric_code: result.metric.metric_code.0,
-            metric_name: result.metric.metric_name,
-            unit: result.metric.unit,
-            value_type: result.metric.value_type.to_string(),
-            visualization: result.metric.visualization.to_string(),
-        },
-        points: result
-            .points
-            .into_iter()
-            .map(|p| ObservationPointDto {
-                value: p.value.as_str().to_string(),
-                value_num: p.value.as_str().parse::<f64>().ok(),
-                observed_at: format_rfc3339_utc(p.observed_at),
-            })
-            .collect(),
     };
 
     Ok(resp.into_common_response().to_json())

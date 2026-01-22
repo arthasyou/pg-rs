@@ -1,11 +1,6 @@
 use demo_db::{
-    CreateDataSource, DataSourceKind, MetricId, ObservationValue, SubjectId,
-    dto::{
-        base::Range,
-        medical::{ObservationQueryResult, QueryObservationSeries},
-    },
+    CreateDataSource, DataSourceKind, MetricId, ObservationValue, SubjectId, dto::base::Range,
 };
-use pg_tables::table::recipe::dto::RecipeId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use time::{OffsetDateTime, UtcOffset};
@@ -52,7 +47,7 @@ pub struct SelectableMetricDto {
 // =========================
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
-pub struct QueryObservationRequest {
+pub struct QueryObservationParams {
     /// subject 全局 ID（web 层用裸 i64）
     pub subject_id: i64,
 
@@ -66,8 +61,13 @@ pub struct QueryObservationRequest {
     pub end_at: Option<String>,
 }
 
-impl QueryObservationRequest {
-    pub fn to_internal(self) -> Result<(QueryObservationSeries, Range<OffsetDateTime>)> {
+impl QueryObservationParams {
+    pub fn to_internal(
+        self,
+    ) -> Result<(
+        demo_db::dto::medical::QueryObservationRequest,
+        Range<OffsetDateTime>,
+    )> {
         let start = match self.start_at {
             Some(ref s) => parse_rfc3339(s)?,
             None => OffsetDateTime::from_unix_timestamp(0).unwrap(),
@@ -83,53 +83,13 @@ impl QueryObservationRequest {
             to: Some(end),
         };
 
-        let query = QueryObservationSeries {
+        let query = demo_db::dto::medical::QueryObservationRequest {
             subject_id: self.subject_id.into(),
-            metric_id: self.metric_id.into(),
+            metric_id: MetricId(self.metric_id),
         };
 
         Ok((query, range))
     }
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct QueryObservationResponse {
-    pub subject_id: i64,
-    pub metric: MetricDto,
-    pub points: Vec<ObservationPointDto>,
-}
-
-impl From<(i64, ObservationQueryResult)> for QueryObservationResponse {
-    fn from((subject_id, v): (i64, ObservationQueryResult)) -> Self {
-        Self {
-            subject_id,
-            points: v
-                .points
-                .into_iter()
-                .map(|p| ObservationPointDto {
-                    value: p.value.as_str().to_string(),
-                    value_num: v.metric.try_parse_numeric(&p.value),
-                    observed_at: format_rfc3339_utc(p.observed_at),
-                })
-                .collect(),
-            metric: MetricDto {
-                id: v.metric.id.0,
-                code: v.metric.code.as_ref().to_string(),
-                name: v.metric.name,
-                unit: v.metric.unit,
-                vazualization: v.metric.visualization.to_string(),
-            },
-        }
-    }
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct MetricDto {
-    pub id: i64,
-    pub code: String,
-    pub name: String,
-    pub unit: Option<String>,
-    pub vazualization: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -206,56 +166,6 @@ impl RecordObservationRequest {
 pub struct RecordObservationResponse {
     pub observation_id: i64,
     pub source_id: i64,
-}
-
-// =========================
-// Query Composite Metric
-// =========================
-
-#[derive(Debug, Deserialize, ToSchema, IntoParams)]
-pub struct QueryRecipeObservationRequest {
-    /// subject 全局 ID（web 层用裸 i64）
-    pub subject_id: i64,
-
-    /// recipe 全局 ID
-    pub recipe_id: i64,
-
-    /// 查询起始时间（RFC3339, 例如：2025-12-30T10:02:43.893518Z）
-    pub start_at: Option<String>,
-
-    /// 查询结束时间（RFC3339, 例如：2025-12-30T10:02:43.893518Z）
-    pub end_at: Option<String>,
-}
-
-impl QueryRecipeObservationRequest {
-    pub fn to_internal(
-        self,
-    ) -> Result<(
-        demo_db::dto::medical::QueryRecipeObservationRequest,
-        Range<OffsetDateTime>,
-    )> {
-        let start = match self.start_at {
-            Some(ref s) => parse_rfc3339(s)?,
-            None => OffsetDateTime::from_unix_timestamp(0).unwrap(),
-        };
-
-        let end = match self.end_at {
-            Some(ref s) => parse_rfc3339(s)?,
-            None => OffsetDateTime::now_utc(),
-        };
-
-        let range = Range {
-            from: Some(start),
-            to: Some(end),
-        };
-
-        let query = demo_db::dto::medical::QueryRecipeObservationRequest {
-            subject_id: self.subject_id.into(),
-            recipe_id: RecipeId(self.recipe_id),
-        };
-
-        Ok((query, range))
-    }
 }
 
 #[derive(Debug, Serialize, ToSchema)]

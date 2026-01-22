@@ -7,9 +7,8 @@
 
 use pg_tables::table::{
     data_source::dto::{CreateDataSource, DataSourceId},
-    metric::dto::{Metric, MetricId, MetricSummary},
+    metric::dto::{MetricId, MetricSummary},
     observation::dto::{ObservationId, ObservationPoint, ObservationValue},
-    recipe::dto::RecipeId,
     subject::dto::SubjectId,
 };
 use time::OffsetDateTime;
@@ -42,12 +41,6 @@ pub struct RecordObservationWithSourceRequest {
     pub source: CreateDataSource,
 }
 
-/// 查询观测数据
-pub struct QueryObservationSeries {
-    pub subject_id: SubjectId,
-    pub metric_id: MetricId,
-}
-
 /// =========================
 /// 业务输出 DTO
 /// =========================
@@ -59,20 +52,13 @@ pub struct RecordObservationResult {
     pub source_id: DataSourceId,
 }
 
-/// 业务视角的单条观测结果
-#[derive(Debug, Clone)]
-pub struct ObservationQueryResult {
-    pub metric: Metric,
-    pub points: Vec<ObservationPoint>,
-}
-
 /// 查询recipe依赖的观测数据
-pub struct QueryRecipeObservationRequest {
+pub struct QueryObservationRequest {
     pub subject_id: SubjectId,
-    pub recipe_id: RecipeId,
+    pub metric_id: MetricId,
 }
 
-pub struct QueryRecipeObservationResponse {
+pub struct QueryObservationResponse {
     pub metric: MetricSummary,
     pub points: Vec<ObservationPoint>,
 }

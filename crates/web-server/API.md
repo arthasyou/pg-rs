@@ -59,7 +59,7 @@
 
 ### 4.1 Medical DTO
 
-#### QueryObservationRequest（Query Params）
+#### QueryObservationParams（Query Params）
 
 请求参数放在 query string：
 
@@ -75,17 +75,18 @@
 - `2025-12-30T10:02:43Z`
 - 带微秒：`2025-12-30T10:02:43.893518Z`
 
-#### QueryObservationResponse
+#### QueryRecipeObservationResponse
 
 ```json
 {
   "subject_id": 1,
   "metric": {
     "id": 1,
-    "code": "string",
-    "name": "string",
-    "unit": "string | null",
-    "vazualization": "line_chart | bar_chart | value_list | single_value"
+    "metric_code": "string",
+    "metric_name": "string",
+    "unit": "string",
+    "value_type": "int | float | decimal | bool | text",
+    "visualization": "line_chart | bar_chart | value_list | single_value"
   },
   "points": [
     {
@@ -158,12 +159,12 @@ Base path：`/medical`
 用途：查询某个 subject + metric 的时间序列观测点。
 
 - Auth：无
-- Query Params：`QueryObservationRequest`
+- Query Params：`QueryObservationParams`
   - `subject_id`：必填
   - `metric_id`：必填
   - `start_at`：可选，RFC3339（建议 UTC `Z`）
   - `end_at`：可选，RFC3339（建议 UTC `Z`）
-- Success Response：`CommonResponse<QueryObservationResponse>`
+- Success Response：`CommonResponse<QueryRecipeObservationResponse>`
 
 示例：
 
@@ -225,19 +226,20 @@ export interface CommonError {
 }
 
 // ---------- Medical ----------
-export interface QueryObservationRequest {
+export interface QueryObservationParams {
   subject_id: number;
   metric_id: number;
   start_at?: string;
   end_at?: string;
 }
 
-export interface MetricDto {
+export interface MetricSummaryDto {
   id: number;
-  code: string;
-  name: string;
-  unit?: string | null;
-  vazualization: string; // line_chart | bar_chart | value_list | single_value
+  metric_code: string;
+  metric_name: string;
+  unit: string;
+  value_type: string; // int | float | decimal | bool | text
+  visualization: string; // line_chart | bar_chart | value_list | single_value
 }
 
 export interface ObservationPointDto {
@@ -246,9 +248,9 @@ export interface ObservationPointDto {
   observed_at: string; // RFC3339 (UTC), e.g. 2025-12-30T10:02:43.893518Z
 }
 
-export interface QueryObservationResponse {
+export interface QueryRecipeObservationResponse {
   subject_id: number;
-  metric: MetricDto;
+  metric: MetricSummaryDto;
   points: ObservationPointDto[];
 }
 

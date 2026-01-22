@@ -22,9 +22,8 @@ use crate::{
     dto::{
         base::Range,
         medical::{
-            ObservationQueryResult, QueryObservationSeries, QueryRecipeObservationRequest,
-            QueryRecipeObservationResponse, RecordObservationRequest, RecordObservationResult,
-            RecordObservationWithSourceRequest,
+            QueryObservationRequest, QueryObservationResponse, RecordObservationRequest,
+            RecordObservationResult, RecordObservationWithSourceRequest,
         },
     },
 };
@@ -118,42 +117,18 @@ impl HealthApi {
         })
     }
 
-    pub async fn query_observation(
-        &self,
-        query: QueryObservationSeries,
-        range: Range<OffsetDateTime>,
-    ) -> Result<ObservationQueryResult> {
-        let metric = self
-            .metric
-            .get(query.metric_id.into())
-            .await?
-            .ok_or(Error::db_not_found("metric"))?;
-
-        let key = ObservationQueryKey {
-            subject_id: query.subject_id.into(),
-            metric_id: query.metric_id.into(),
-        };
-
-        let points = self
-            .observation
-            .query_observation(key, range.into())
-            .await?;
-
-        Ok(ObservationQueryResult { metric, points })
-    }
-
     pub async fn list_selectable_metrics(&self) -> Result<Vec<Metric>> {
         self.metric.list_selectable().await
     }
 
-    pub async fn query_composite_metric(
+    pub async fn query_observation(
         &self,
-        req: QueryRecipeObservationRequest,
+        req: QueryObservationRequest,
         range: Range<OffsetDateTime>,
-    ) -> Result<QueryRecipeObservationResponse> {
+    ) -> Result<QueryObservationResponse> {
         let metric = self
             .metric
-            .get(req.recipe_id.0.into())
+            .get(req.metric_id.0.into())
             .await?
             .ok_or(Error::db_not_found("metric"))?;
         let metric_summary = metric.clone().into();
@@ -181,7 +156,7 @@ impl HealthApi {
         recipe: Recipe,
         metric: MetricSummary,
         range: Range<OffsetDateTime>,
-    ) -> Result<QueryRecipeObservationResponse> {
+    ) -> Result<QueryObservationResponse> {
         let deps_raw: Vec<i64> = serde_json::from_value(recipe.deps.clone())
             .map_err(|_| Error::internal("invalid deps for recipe"))?;
         let deps = deps_raw
@@ -206,7 +181,7 @@ impl HealthApi {
             });
         }
 
-        Ok(QueryRecipeObservationResponse { metric, points })
+        Ok(QueryObservationResponse { metric, points })
     }
 
     async fn query_observation_metric(
@@ -215,7 +190,7 @@ impl HealthApi {
         metric_id: pg_tables::table::metric::dto::MetricId,
         metric: pg_tables::table::metric::dto::MetricSummary,
         range: Range<OffsetDateTime>,
-    ) -> Result<QueryRecipeObservationResponse> {
+    ) -> Result<QueryObservationResponse> {
         let key = ObservationQueryKey {
             subject_id,
             metric_id,
@@ -226,6 +201,6 @@ impl HealthApi {
             .query_observation(key, range.into())
             .await?;
 
-        Ok(QueryRecipeObservationResponse { metric, points })
+        Ok(QueryObservationResponse { metric, points })
     }
 }
