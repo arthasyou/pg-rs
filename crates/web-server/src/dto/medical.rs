@@ -189,7 +189,7 @@ pub struct MetricSummaryDto {
 // Upload Markdown Data Source
 // =========================
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, ToSchema, Clone)]
 pub struct UploadMarkdownRequest {
     /// subject 全局 ID
     pub subject_id: i64,
@@ -204,7 +204,7 @@ pub struct UploadMarkdownRequest {
     pub file_content: String,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize, ToSchema, Clone)]
 pub struct UploadMarkdownResponse {
     pub source_id: i64,
     pub source_type: String,
@@ -214,4 +214,17 @@ pub struct UploadMarkdownResponse {
     pub created_at: String,
     /// 插入的观测记录数
     pub records_inserted: usize,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct UploadMarkdownTaskResponse {
+    pub task_id: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct TaskStatusResponse {
+    pub task_id: String,
+    pub status: String,
+    pub result: Option<UploadMarkdownResponse>,
+    pub error: Option<String>,
 }

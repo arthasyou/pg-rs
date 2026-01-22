@@ -124,6 +124,7 @@ Get dropdown options for metrics.
 ### 4) POST /medical/data-source/markdown
 Upload Markdown content, parse it into JSON, store it in `data_source`, then extract metrics
 and insert observations **only** for metrics that already exist in the `metric` table.
+This endpoint is async and returns a `task_id` immediately.
 
 **Body (UploadMarkdownRequest):**
 ```json
@@ -135,18 +136,37 @@ and insert observations **only** for metrics that already exist in the `metric` 
 }
 ```
 
-**Response:** `CommonResponse<UploadMarkdownResponse>`
+**Response:** `CommonResponse<UploadMarkdownTaskResponse>`
 ```json
 {
   "code": 0,
   "message": "ok",
   "data": {
-    "source_id": 45,
-    "source_type": "import",
-    "source_name": "lab_report_2025-12",
-    "parsed_data": {"any": "json"},
-    "created_at": "2025-12-30T10:02:43.893518Z",
-    "records_inserted": 3
+    "task_id": "task-1737423000-1"
+  }
+}
+```
+
+### 5) GET /medical/data-source/markdown/tasks/{task_id}
+Get task status and (when finished) the result.
+
+**Response:** `CommonResponse<TaskStatusResponse>`
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "task_id": "task-1737423000-1",
+    "status": "succeeded",
+    "result": {
+      "source_id": 45,
+      "source_type": "import",
+      "source_name": "lab_report_2025-12",
+      "parsed_data": {"any": "json"},
+      "created_at": "2025-12-30T10:02:43.893518Z",
+      "records_inserted": 3
+    },
+    "error": null
   }
 }
 ```
