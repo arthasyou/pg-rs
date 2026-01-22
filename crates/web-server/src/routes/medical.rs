@@ -7,12 +7,10 @@ use crate::{
         ListSelectableMetricsResponse, ObservationPointDto, QueryObservationParams,
         QueryRecipeObservationResponse, RecordObservationRequest, RecordObservationResponse,
         SelectableMetricDto, SourceInput, UploadMarkdownRequest, UploadMarkdownResponse,
-        ExtractHealthMetricsRequest, ExtractHealthMetricsResponse, HealthMetric, ExtractedHealthData,
         MetricSummaryDto,
     },
     handlers::medical::{
-        list_selectable_metrics, query_observations, record_observation,
-        upload_markdown_data_source, extract_health_metrics,
+        list_selectable_metrics, query_observations, record_observation, upload_markdown_data_source,
     },
 };
 
@@ -23,7 +21,6 @@ use crate::{
         crate::handlers::medical::record_observation,
         crate::handlers::medical::list_selectable_metrics,
         crate::handlers::medical::upload_markdown_data_source,
-        crate::handlers::medical::extract_health_metrics,
     ),
     components(
         schemas(
@@ -38,15 +35,10 @@ use crate::{
             SelectableMetricDto,
             UploadMarkdownRequest,
             UploadMarkdownResponse,
-            ExtractHealthMetricsRequest,
-            ExtractHealthMetricsResponse,
-            HealthMetric,
-            ExtractedHealthData,
             CommonResponse<QueryRecipeObservationResponse>,
             CommonResponse<RecordObservationResponse>,
             CommonResponse<ListSelectableMetricsResponse>,
             CommonResponse<UploadMarkdownResponse>,
-            CommonResponse<ExtractHealthMetricsResponse>,
             CommonError
         )
     ),
@@ -61,5 +53,4 @@ pub fn medical_routes() -> Router {
         .route("/observations", get(query_observations).post(record_observation))
         .route("/metrics/selectable", get(list_selectable_metrics))
         .route("/data-source/markdown", post(upload_markdown_data_source))
-        .route("/extract-metrics", post(extract_health_metrics))
 }

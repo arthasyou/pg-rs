@@ -122,11 +122,13 @@ Get dropdown options for metrics.
 ```
 
 ### 4) POST /medical/data-source/markdown
-Upload Markdown content, parse it into JSON, and create a data source.
+Upload Markdown content, parse it into JSON, store it in `data_source`, then extract metrics
+and insert observations **only** for metrics that already exist in the `metric` table.
 
 **Body (UploadMarkdownRequest):**
 ```json
 {
+  "subject_id": 1,
   "source_type": "import",
   "source_name": "lab_report_2025-12",
   "file_content": "# Report..."
@@ -143,39 +145,7 @@ Upload Markdown content, parse it into JSON, and create a data source.
     "source_type": "import",
     "source_name": "lab_report_2025-12",
     "parsed_data": {"any": "json"},
-    "created_at": "2025-12-30T10:02:43.893518Z"
-  }
-}
-```
-
-### 5) POST /medical/extract-metrics
-Use LLM to extract health metrics from Markdown and optionally write observations.
-
-**Body (ExtractHealthMetricsRequest):**
-```json
-{
-  "content": "# Report...",
-  "subject_id": 1,
-  "source_type": "import",
-  "source_name": "lab_report_2025-12"
-}
-```
-
-**Response:** `CommonResponse<ExtractHealthMetricsResponse>`
-```json
-{
-  "code": 0,
-  "message": "ok",
-  "data": {
-    "data": {
-      "patient_info": {"name": "Alice"},
-      "metrics": [
-        {"metric_code": "blood_glucose", "value": "5.6 mmol/L"}
-      ],
-      "diagnoses": ["Normal"],
-      "recommendations": ["Keep healthy diet"]
-    },
-    "source_id": 45,
+    "created_at": "2025-12-30T10:02:43.893518Z",
     "records_inserted": 3
   }
 }

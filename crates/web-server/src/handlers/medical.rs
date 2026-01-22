@@ -2,20 +2,20 @@ use axum::{Json, extract::Query};
 use demo_db::{
     CreateDataSource, api::medical::HealthApi, dto::medical::RecordObservationWithSourceRequest,
 };
+use pg_tables::table::metric::dto::MetricKind;
+use std::collections::HashSet;
 use time::OffsetDateTime;
 use toolcraft_axum_kit::{CommonResponse, IntoCommonResponse, ResponseResult};
 
 use crate::{
     dto::medical::{
-        ExtractHealthMetricsRequest, ExtractHealthMetricsResponse, ExtractedHealthData,
-        HealthMetric, ListSelectableMetricsResponse, QueryObservationParams,
-        QueryRecipeObservationResponse, MetricSummaryDto, RecordObservationRequest,
-        RecordObservationResponse, SelectableMetricDto, UploadMarkdownRequest,
-        UploadMarkdownResponse, ObservationPointDto, format_rfc3339_utc,
+        ListSelectableMetricsResponse, QueryObservationParams, QueryRecipeObservationResponse,
+        MetricSummaryDto, RecordObservationRequest, RecordObservationResponse, SelectableMetricDto,
+        UploadMarkdownRequest, UploadMarkdownResponse, ObservationPointDto, format_rfc3339_utc,
     },
     error::Error,
     statics::db_manager::get_default_ctx,
-    utils::{extract_health_metrics_with_llm, parse_markdown},
+    utils::parse_markdown,
 };
 
 #[utoipa::path(
@@ -161,7 +161,7 @@ pub async fn upload_markdown_data_source(
 
     // 准备数据源数据
     let ctx = get_default_ctx();
-    let service = DataSourceService::new(ctx);
+    let service = DataSourceService::new(ctx.clone());
 
     let input = CreateDataSource {
         kind: DataSourceKind::from(req.source_type.as_str()),
@@ -173,6 +173,27 @@ pub async fn upload_markdown_data_source(
     let model = service.create(input).await.map_err(|e: demo_db::Error| {
         Error::Custom(format!("Failed to insert data source: {}", e))
     })?;
+
+    let api = HealthApi::new(ctx);
+    let metrics = api.list_selectable_metrics().await.map_err(Error::Core)?;
+    let extracted = extract_metric_values(&metrics, &req.file_content);
+    let mut records_inserted = 0;
+
+    for (metric_id, value) in extracted {
+        let result = api
+            .record_observation_with_source_id(
+                demo_db::SubjectId(req.subject_id),
+                metric_id,
+                demo_db::ObservationValue(value),
+                OffsetDateTime::now_utc(),
+                model.id,
+            )
+            .await;
+
+        if result.is_ok() {
+            records_inserted += 1;
+        }
+    }
 
     let now = OffsetDateTime::now_utc();
     let created_at = now
@@ -186,148 +207,74 @@ pub async fn upload_markdown_data_source(
         source_name: model.name,
         parsed_data,
         created_at,
+        records_inserted,
     };
 
     Ok(resp.into_common_response().to_json())
 }
 
-#[utoipa::path(
-    post,
-    path = "/extract-metrics",
-    tag = "Medical",
-    request_body = ExtractHealthMetricsRequest,
-    responses(
-        (status = 200, description = "Extract health metrics from document", body = CommonResponse<ExtractHealthMetricsResponse>),
-    )
-)]
-pub async fn extract_health_metrics(
-    Json(req): Json<ExtractHealthMetricsRequest>,
-) -> ResponseResult<ExtractHealthMetricsResponse> {
-    use demo_db::DataSourceKind;
-    use pg_tables::table::data_source::service::DataSourceService;
-    use serde_json::Value as JsonValue;
+fn extract_metric_values(
+    metrics: &[pg_tables::table::metric::dto::Metric],
+    content: &str,
+) -> Vec<(pg_tables::table::metric::dto::MetricId, String)> {
+    let mut results = Vec::new();
+    let mut seen = HashSet::new();
 
-    // 获取 LLM 配置
-    let config = crate::statics::llm_client::get_llm_config();
+    for metric in metrics {
+        if metric.kind != MetricKind::Primitive || seen.contains(&metric.id) {
+            continue;
+        }
 
-    // 使用 LLM 提取医疗指标
-    let extracted_json =
-        extract_health_metrics_with_llm(&req.content, &config.base_url, &config.model)
-            .await
-            .map_err(|e| Error::Custom(format!("Failed to extract metrics with LLM: {}", e)))?;
+        let code = metric.code.as_ref().to_ascii_lowercase();
+        let name = metric.name.to_ascii_lowercase();
 
-    // 解析提取的数据
-    let patient_info = extracted_json
-        .get("patient_info")
-        .cloned()
-        .unwrap_or_else(|| JsonValue::Object(Default::default()));
-
-    let metrics: Vec<HealthMetric> = extracted_json
-        .get("metrics")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|item| serde_json::from_value(item.clone()).ok())
-                .collect()
-        })
-        .unwrap_or_default();
-
-    let diagnoses: Vec<String> = extracted_json
-        .get("diagnoses")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|item| item.as_str().map(|s| s.to_string()))
-                .collect()
-        })
-        .unwrap_or_default();
-
-    let recommendations: Vec<String> = extracted_json
-        .get("recommendations")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|item| item.as_str().map(|s| s.to_string()))
-                .collect()
-        })
-        .unwrap_or_default();
-
-    let extracted_data = ExtractedHealthData {
-        patient_info,
-        metrics: metrics.clone(),
-        diagnoses,
-        recommendations,
-    };
-
-    // 保存数据来源到数据库
-    let ctx = get_default_ctx();
-    let service = DataSourceService::new(ctx.clone());
-
-    let source_type = req
-        .source_type
-        .clone()
-        .unwrap_or_else(|| "import".to_string());
-    let source_name = req
-        .source_name
-        .clone()
-        .unwrap_or_else(|| "Health Metrics Extraction".to_string());
-
-    let input = CreateDataSource {
-        kind: DataSourceKind::from(source_type.as_str()),
-        name: source_name.clone(),
-        metadata: Some(extracted_json.clone()),
-    };
-
-    let source_model = service.create(input).await.map_err(|e: demo_db::Error| {
-        Error::Custom(format!("Failed to insert data source: {}", e))
-    })?;
-
-    let source_id = source_model.id.0;
-
-    // 插入观测记录
-    let api = HealthApi::new(ctx);
-    let mut records_inserted = 0;
-
-    // 将提取的指标插入到数据库
-    for metric in &metrics {
-        // 尝试匹配指标代码到数据库中的指标
-        if let Ok(metrics_list) = api.list_selectable_metrics().await {
-            for db_metric in metrics_list {
-                let metric_lower = metric.metric_code.to_lowercase();
-                let db_metric_lower = db_metric.name.to_lowercase();
-
-                if metric_lower.contains(&db_metric_lower)
-                    || db_metric_lower.contains(&metric_lower)
-                {
-                    let obs_req = RecordObservationWithSourceRequest {
-                        subject_id: demo_db::SubjectId(req.subject_id),
-                        metric_id: db_metric.id,
-                        value: demo_db::ObservationValue(metric.value.clone()),
-                        observed_at: OffsetDateTime::now_utc(),
-                        source: demo_db::CreateDataSource {
-                            kind: demo_db::DataSourceKind::Import,
-                            name: source_name.clone(),
-                            metadata: Some(
-                                serde_json::to_value(metric)
-                                    .unwrap_or_else(|_| JsonValue::Object(Default::default())),
-                            ),
-                        },
-                    };
-
-                    if api.record_observation_with_source(obs_req).await.is_ok() {
-                        records_inserted += 1;
-                        break;
-                    }
+        for line in content.lines() {
+            let line_trim = line.trim();
+            if line_trim.is_empty() {
+                continue;
+            }
+            let line_lower = line_trim.to_ascii_lowercase();
+            if let Some(value) = extract_value_from_line(line_trim, &line_lower, &code, &name) {
+                if !value.is_empty() {
+                    results.push((metric.id, value));
+                    seen.insert(metric.id);
+                    break;
                 }
             }
         }
     }
 
-    let resp = ExtractHealthMetricsResponse {
-        data: extracted_data,
-        source_id: Some(source_id),
-        records_inserted,
+    results
+}
+
+fn extract_value_from_line(
+    line: &str,
+    line_lower: &str,
+    code: &str,
+    name: &str,
+) -> Option<String> {
+    let key = if !code.is_empty() && line_lower.contains(code) {
+        code
+    } else if !name.is_empty() && line_lower.contains(name) {
+        name
+    } else {
+        return None;
     };
 
-    Ok(resp.into_common_response().to_json())
+    let pos = line_lower.find(key)?;
+    let mut after = line[pos + key.len()..].trim();
+    after = after.trim_start_matches(|c: char| {
+        matches!(c, ':' | '：' | '-' | '—' | '–' | '|' | ' ' | '\t')
+    });
+
+    let value = match after.split_once('|') {
+        Some((v, _)) => v.trim(),
+        None => after,
+    };
+
+    if value.is_empty() {
+        None
+    } else {
+        Some(value.to_string())
+    }
 }

@@ -117,6 +117,27 @@ impl HealthApi {
         })
     }
 
+    pub async fn record_observation_with_source_id(
+        &self,
+        subject_id: SubjectId,
+        metric_id: pg_tables::table::metric::dto::MetricId,
+        value: ObservationValue,
+        observed_at: OffsetDateTime,
+        source_id: DataSourceId,
+    ) -> Result<()> {
+        let input = RecordObservation {
+            subject_id,
+            metric_id,
+            value,
+            observed_at,
+            source_id: Some(source_id),
+        };
+
+        self.observation.record(input).await?;
+
+        Ok(())
+    }
+
     pub async fn list_selectable_metrics(&self) -> Result<Vec<Metric>> {
         self.metric.list_selectable().await
     }
